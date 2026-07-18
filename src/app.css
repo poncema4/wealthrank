@@ -505,3 +505,19 @@ footer a { color: var(--accent-2); text-decoration: none; }
 .acct-panel { animation: rise 0.25s ease-out; }
 .acct-head { display: flex; justify-content: space-between; align-items: baseline; }
 .mini:disabled { opacity: 0.5; cursor: default; }
+
+/* ---------- account panel v2 ---------- */
+.acct-mode { margin-bottom: 14px; }
+.acct-mode button { flex: 1; }
+.acct-cta { margin-top: 14px; }
+.acct-id { display: flex; gap: 14px; align-items: center; margin: 6px 0 14px; }
+.acct-avatar {
+  width: 46px; height: 46px; border-radius: 50%;
+  background: var(--grad); color: #06130b;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 1.3rem; flex-shrink: 0;
+}
+.acct-name { font-weight: 800; font-size: 1.05rem; }
+.acct-sub { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+.mini.alt.danger { color: var(--danger); border-color: rgba(255, 107, 107, 0.35); }
+.acct-btn.in { color: var(--accent); border-color: rgba(61, 220, 132, 0.4); }

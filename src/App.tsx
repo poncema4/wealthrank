@@ -282,8 +282,8 @@ export default function App() {
   return (
     <div className="wrap">
       <header className="hero">
-        <button className="acct-btn" onClick={() => setAcctOpen((v) => !v)}>
-          {savedUsername() ? savedUsername() : "Account"}
+        <button className={savedUsername() ? "acct-btn in" : "acct-btn"} onClick={() => setAcctOpen((v) => !v)}>
+          {savedUsername() || "Account"}
         </button>
         <div className="logo">
           Wealth<span>Rank</span>
