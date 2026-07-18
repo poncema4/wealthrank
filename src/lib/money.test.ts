@@ -141,3 +141,91 @@ describe("computeInsights", () => {
     expect(computeInsights(many, NOW).length).toBeLessThanOrEqual(4);
   });
 });
+
+import { monthlyHistory } from "./money";
+
+describe("monthlyHistory", () => {
+  const mk2 = (kind: "income" | "expense", amount: number, y: number, m: number): LedgerEntry => ({
+    id: Math.random().toString(36).slice(2), ts: Date.UTC(y, m, 10), kind, amount, note: "", category: "Other",
+  });
+
+  it("one row per active month, oldest first, with correct sums", () => {
+    const rows = monthlyHistory([
+      mk2("income", 4000, 2026, 6), mk2("expense", 1000, 2026, 6),   // July
+      mk2("income", 4000, 2026, 7), mk2("expense", 2500, 2026, 7),   // August
+    ]);
+    expect(rows.map((r) => r.month)).toEqual(["2026-07", "2026-08"]);
+    expect(rows[0].net).toBe(3000);
+    expect(rows[1].net).toBe(1500);
+  });
+
+  it("skips empty months and caps the window", () => {
+    const rows = monthlyHistory(
+      Array.from({ length: 15 }, (_, i) => mk2("income", 100, 2025, i)), 12);
+    expect(rows.length).toBe(12);
+  });
+});
+
+import { missedPaydays, budgetStatus } from "./money";
+import { parseCsv, importBankCsv, categorize } from "./csv";
+
+describe("missedPaydays", () => {
+  const DAY = 86400_000;
+  it("counts biweekly paydays since the anchor", () => {
+    const now = Date.UTC(2026, 6, 18);
+    const anchor = now - 30 * DAY;
+    expect(missedPaydays(anchor, "biweekly", now).length).toBe(2);
+  });
+  it("caps runaway catch-ups and rejects bad anchors", () => {
+    const now = Date.UTC(2026, 6, 18);
+    expect(missedPaydays(now - 400 * DAY, "weekly", now).length).toBe(8);
+    expect(missedPaydays(now + DAY, "weekly", now)).toEqual([]);
+    expect(missedPaydays(NaN, "weekly", now)).toEqual([]);
+  });
+});
+
+describe("budgetStatus", () => {
+  it("computes share and over-flag, sorted worst-first", () => {
+    const s = { income: 0, expenses: 0, net: 0, savingsRate: null, byCategory: { Food: 350, Gas: 40 } };
+    const rows = budgetStatus(s, { Food: 300, Gas: 100 });
+    expect(rows[0].category).toBe("Food");
+    expect(rows[0].over).toBe(true);
+    expect(rows[1].share).toBeCloseTo(0.4);
+  });
+});
+
+describe("bank CSV import", () => {
+  it("parses quoted fields with commas", () => {
+    expect(parseCsv('a,"b,c",d\n1,2,3')).toEqual([["a", "b,c", "d"], ["1", "2", "3"]]);
+  });
+
+  it("imports a signed-Amount bank export", () => {
+    const csv = [
+      "Date,Description,Amount",
+      '07/03/2026,"PAYROLL ACME CORP",2384.62',
+      '07/05/2026,"UBER EATS 8383",-24.50',
+      '07/06/2026,"SHELL OIL 4432",-38.00',
+      "bad row,,",
+    ].join("\n");
+    const { rows, skipped } = importBankCsv(csv);
+    expect(rows.length).toBe(3);
+    expect(skipped).toBe(1);
+    expect(rows[0]).toMatchObject({ kind: "income", amount: 2384.62, category: "Paycheck" });
+    expect(rows[1]).toMatchObject({ kind: "expense", amount: 24.5, category: "Food" });
+    expect(rows[2]).toMatchObject({ kind: "expense", category: "Gas" });
+  });
+
+  it("imports Debit/Credit column banks too", () => {
+    const csv = ["Posted Date,Memo,Debit,Credit", "2026-07-10,NETFLIX.COM,12.99,", "2026-07-11,DEPOSIT,,500.00"].join("\n");
+    const { rows } = importBankCsv(csv);
+    expect(rows[0]).toMatchObject({ kind: "expense", amount: 12.99, category: "Subscriptions" });
+    expect(rows[1]).toMatchObject({ kind: "income", amount: 500 });
+  });
+
+  it("categorize rules hit the common merchants", () => {
+    expect(categorize("CHIPOTLE 1234")).toBe("Food");
+    expect(categorize("EZPASS NJ TOLL")).toBe("Car");
+    expect(categorize("SPOTIFY USA")).toBe("Subscriptions");
+    expect(categorize("MYSTERY VENDOR LLC")).toBe("Other");
+  });
+});

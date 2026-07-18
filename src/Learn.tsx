@@ -8,7 +8,7 @@ import {
 
 /* Personalized investing education. Everything here is math + widely-taught
    principles, computed from YOUR numbers. It deliberately never names a stock
-   to buy — that's the line between education and advice. */
+   to buy; that's the line between education and advice. */
 
 function readLedger(): LedgerEntry[] {
   try {
@@ -33,7 +33,7 @@ const STEPS = [
   },
   {
     t: "4. Automate it and stop looking",
-    d: "A fixed amount every payday, automatically. Time in the market beats timing the market — historically, missing just the 10 best days in a decade roughly halves returns. Automation removes the human error.",
+    d: "A fixed amount every payday, automatically. Time in the market beats timing the market; historically, missing just the 10 best days in a decade roughly halves returns. Automation removes the human error.",
   },
 ];
 
@@ -49,9 +49,9 @@ export default function Learn() {
   return (
     <div>
       <section className="card">
-        <h2 className="section-title">Why invest at all — your numbers</h2>
+        <h2 className="section-title">Why invest at all; your numbers</h2>
         <p className="learn-p">
-          Cash loses to inflation. The S&P 500's long-run average is ~10%/yr before inflation (~7% after) —
+          Cash loses to inflation. The S&P 500's long-run average is ~10%/yr before inflation (~7% after) -
           not a promise, but a century of history. Watch what that difference does to
           <b> {fmtMoney(monthly)}/month</b>:
         </p>
@@ -69,7 +69,7 @@ export default function Learn() {
           ))}
         </div>
         <p className="footnote">
-          7% = inflation-adjusted historical average of a broad U.S. index. Real results vary year to year —
+          7% = inflation-adjusted historical average of a broad U.S. index. Real results vary year to year,
           sometimes wildly. The lesson is the gap, not the exact number.
         </p>
       </section>
@@ -94,21 +94,21 @@ export default function Learn() {
       <section className="card">
         <h2 className="section-title">Starting from zero is normal</h2>
         <p className="learn-p">
-          If your investments line says $0 today, you're exactly where most people your age are — the
+          If your investments line says $0 today, you're exactly where most people your age are; the
           Fed's own data shows the median under-35 household holds modest financial assets. What separates
           outcomes isn't starting money; it's starting <i>date</i>. Every year of delay at a 7% return
-          costs roughly 7% of the final total, compounded — starting at 21 instead of 31 can nearly
+          costs roughly 7% of the final total, compounded; starting at 21 instead of 31 can nearly
           <b> double</b> the end result for the same monthly amount.
         </p>
         <p className="learn-p">
           Practical first move: open a brokerage or Roth IRA account (most are free), set up an automatic
-          monthly transfer — even $50 — into a broad index fund, and let the Money tab here track what
+          monthly transfer; even $50, into a broad index fund, and let the Money tab here track what
           that does to your savings rate.
         </p>
       </section>
 
       <p className="footnote center">
-        WealthRank teaches the math — it never recommends specific securities. Not financial advice;
+        WealthRank teaches the math; it never recommends specific securities. Not financial advice;
         for personal guidance talk to a licensed fiduciary advisor.
       </p>
     </div>

@@ -1,11 +1,11 @@
 /**
- * WealthRank money engine — paychecks, expenses, cashflow, salary comparison.
+ * WealthRank money engine; paychecks, expenses, cashflow, salary comparison.
  * Pure functions only; everything here is unit-tested.
  *
- * INCOME DATA — anchored to the VERIFIED BLS figure: median usual weekly earnings
+ * INCOME DATA; anchored to the VERIFIED BLS figure: median usual weekly earnings
  * of full-time workers = $1,235 in Q1 2026 (BLS Usual Weekly Earnings release,
  * 121.0M workers). The per-age SHAPE uses the stable ratios from prior BLS
- * releases (the age curve moves very slowly), scaled to that verified anchor —
+ * releases (the age curve moves very slowly), scaled to that verified anchor -
  * labeled as an estimate in the UI. When Q2-2026 lands, update WEEKLY_ANCHOR
  * and (rarely) the ratios.
  */
@@ -136,12 +136,62 @@ export function savingsVerdict(rate: number | null): { title: string; sub: strin
   if (rate >= TARGET_SAVINGS_RATE)
     return { title: "On target", sub: "You're at or above the classic 20% guideline." };
   if (rate >= 0.1)
-    return { title: "Close", sub: "Under the 20% guideline — one trimmed category usually closes this." };
+    return { title: "Close", sub: "Under the 20% guideline; one trimmed category usually closes this." };
   if (rate >= 0) return { title: "Thin margin", sub: "Most of your income is spoken for. Worth a category audit." };
-  return { title: "Spending exceeds income", sub: "This month is negative — the first fix is visibility, which you now have." };
+  return { title: "Spending exceeds income", sub: "This month is negative; the first fix is visibility, which you now have." };
 }
 
 /** Emergency fund target: 3–6 months of average monthly expenses. */
 export function emergencyFundTarget(avgMonthlyExpenses: number): { low: number; high: number } {
   return { low: avgMonthlyExpenses * 3, high: avgMonthlyExpenses * 6 };
+}
+
+/* ---------- month-by-month history (the trendline data) ---------- */
+
+export type MonthRow = { month: string; label: string } & MonthSummary;
+
+/** Every calendar month that has ledger activity, oldest first, capped at `max`. */
+export function monthlyHistory(entries: LedgerEntry[], max = 12): MonthRow[] {
+  const months = [...new Set(entries.map((e) => monthKey(e.ts)))].sort();
+  return months.slice(-max).map((m) => {
+    const d = new Date(`${m}-15T00:00:00Z`);
+    return {
+      month: m,
+      label: d.toLocaleDateString(undefined, { month: "short", year: "2-digit", timeZone: "UTC" }),
+      ...summarizeMonth(entries, m),
+    };
+  });
+}
+
+/* ---------- recurring paychecks (catch-up model) ---------- */
+
+const FREQ_DAYS: Record<PayFrequency, number> = { weekly: 7, biweekly: 14, semimonthly: 15, monthly: 30 };
+
+/**
+ * Paydays that have occurred since the anchor (exclusive) up to now, capped.
+ * Semimonthly/monthly use day-count approximations, which is fine for a
+ * catch-up prompt; the user confirms before anything is logged.
+ */
+export function missedPaydays(anchorTs: number, freq: PayFrequency, now = Date.now(), cap = 8): number[] {
+  if (!Number.isFinite(anchorTs) || anchorTs <= 0 || anchorTs > now) return [];
+  const step = FREQ_DAYS[freq] * 86400_000;
+  const out: number[] = [];
+  for (let t = anchorTs + step; t <= now && out.length < cap; t += step) out.push(t);
+  return out;
+}
+
+/* ---------- category budgets ---------- */
+
+export type Budgets = Record<string, number>; // category -> monthly cap in dollars
+
+export type BudgetStatus = { category: string; spent: number; cap: number; share: number; over: boolean };
+
+export function budgetStatus(summary: MonthSummary, budgets: Budgets): BudgetStatus[] {
+  return Object.entries(budgets)
+    .filter(([, cap]) => Number.isFinite(cap) && cap > 0)
+    .map(([category, cap]) => {
+      const spent = summary.byCategory[category] ?? 0;
+      return { category, spent, cap, share: Math.min(spent / cap, 1.5), over: spent > cap };
+    })
+    .sort((a, b) => b.share - a.share);
 }

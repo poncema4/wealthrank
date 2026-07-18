@@ -460,3 +460,37 @@ footer a { color: var(--accent-2); text-decoration: none; }
 .insight { display: flex; gap: 12px; font-size: 0.92rem; line-height: 1.55; align-items: baseline; }
 .insight-icon { color: var(--accent); flex-shrink: 0; font-size: 0.8rem; }
 .sync-badge.ai { color: var(--accent-2); border-color: rgba(34, 184, 207, 0.4); }
+
+/* ---------- month trend ---------- */
+.trend-legend { display: flex; gap: 18px; margin-top: 8px; font-size: 0.72rem; color: var(--muted); }
+.trend-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; }
+.dot-g { background: #3ddc84; } .dot-o { background: #ff9d6b; } .dot-c { background: #22b8cf; border-radius: 50% !important; }
+.trend-rows { margin-top: 12px; }
+.trend-row {
+  display: grid; grid-template-columns: 64px 1fr 1fr 1fr 48px; gap: 8px;
+  padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 0.85rem; align-items: center;
+}
+.trend-row:last-child { border-bottom: none; }
+.trend-month { color: var(--muted); font-weight: 700; }
+.trend-row .pos { color: var(--accent); }
+.trend-row .neg2 { color: #ff9d6b; }
+.trend-net { font-weight: 700; }
+.trend-rate { color: var(--accent-2); text-align: right; }
+
+/* ---------- budgets ---------- */
+.budgets { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.budget-row { display: grid; grid-template-columns: 92px 1fr auto; gap: 10px; align-items: center; font-size: 0.82rem; }
+.budget-name { color: var(--muted); font-weight: 700; }
+.budget-bar { height: 8px; background: var(--card-2); border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.budget-fill { height: 100%; background: var(--grad); border-radius: 999px; }
+.budget-fill.over { background: var(--danger); }
+.budget-amt { color: var(--muted); }
+.budget-amt.over-t { color: var(--danger); font-weight: 700; }
+
+/* ---------- catch-up + messages ---------- */
+.catchup { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 0.92rem; line-height: 1.5; }
+.import-msg { margin-top: 10px; font-size: 0.85rem; color: var(--accent-2); }
+
+/* ---------- account ---------- */
+.acct-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+@media (max-width: 480px) { .acct-grid { grid-template-columns: 1fr; } }

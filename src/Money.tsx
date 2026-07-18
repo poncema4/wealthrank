@@ -7,6 +7,10 @@ import {
   salaryRatio,
   summarizeMonth,
   runningBalance,
+  monthlyHistory,
+  missedPaydays,
+  budgetStatus,
+  EXPENSE_CATEGORIES as CATS,
   savingsVerdict,
   TARGET_SAVINGS_RATE,
   type LedgerEntry,
@@ -15,12 +19,15 @@ import {
 import { fmtMoney } from "./lib/percentile";
 import { computeInsights } from "./lib/insights";
 import { localAiInsights } from "./lib/localAi";
+import { importBankCsv, toLedgerEntries } from "./lib/csv";
 import {
   fetchLedger,
   addLedgerEntry,
   deleteLedgerEntry,
   saveLedgerProfile,
   fetchAiInsights,
+  claimAccount,
+  loginAccount,
   type LedgerProfile,
 } from "./lib/api";
 
@@ -78,6 +85,60 @@ function Sparkline({ entries }: { entries: LedgerEntry[] }) {
   );
 }
 
+function MonthTrend({ entries }: { entries: LedgerEntry[] }) {
+  const rows = useMemo(() => monthlyHistory(entries), [entries]);
+  if (rows.length < 2) return null; // needs two months before a trend means anything
+  const W = 560, H = 150, P = 8, LABEL_H = 18;
+  const maxV = Math.max(...rows.map((r) => Math.max(r.income, r.expenses)), 1);
+  const band = (W - 2 * P) / rows.length;
+  const barW = Math.min(band * 0.28, 26);
+  const y = (v: number) => H - P - (v / maxV) * (H - 2 * P - LABEL_H);
+  // net trendline: map net onto its own scale spanning the same plot area
+  const nets = rows.map((r) => r.net);
+  const nMin = Math.min(...nets, 0), nMax = Math.max(...nets, 1);
+  const ny = (v: number) => H - P - ((v - nMin) / (nMax - nMin || 1)) * (H - 2 * P - LABEL_H);
+  const cx = (i: number) => P + band * i + band / 2;
+  const line = rows.map((r, i) => `${i === 0 ? "M" : "L"} ${cx(i)} ${ny(r.net)}`).join(" ");
+  return (
+    <section className="card">
+      <h2 className="section-title">Month by month</h2>
+      <svg viewBox={`0 0 ${W} ${H}`} className="chart" role="img" aria-label="Monthly income, expenses, and net trend">
+        {rows.map((r, i) => (
+          <g key={r.month}>
+            <rect x={cx(i) - barW - 2} y={y(r.income)} width={barW} height={H - P - LABEL_H - y(r.income) + (LABEL_H - 0)} fill="#3ddc84" opacity="0.85" rx="3" />
+            <rect x={cx(i) + 2} y={y(r.expenses)} width={barW} height={H - P - LABEL_H - y(r.expenses) + (LABEL_H - 0)} fill="#ff9d6b" opacity="0.85" rx="3" />
+            <text x={cx(i)} y={H - 4} textAnchor="middle" className="chart-label">{r.label}</text>
+          </g>
+        ))}
+        <path d={line} fill="none" stroke="#22b8cf" strokeWidth="2.5" strokeLinejoin="round" />
+        {rows.map((r, i) => (
+          <circle key={r.month} cx={cx(i)} cy={ny(r.net)} r="3.5" fill="#22b8cf" />
+        ))}
+      </svg>
+      <div className="trend-legend">
+        <span><i className="dot-g" /> income</span>
+        <span><i className="dot-o" /> expenses</span>
+        <span><i className="dot-c" /> net (kept)</span>
+      </div>
+      <div className="trend-rows">
+        {[...rows].reverse().map((r) => (
+          <div className="trend-row" key={r.month}>
+            <span className="trend-month">{r.label}</span>
+            <span className="pos">+{fmtMoney(r.income)}</span>
+            <span className="neg2">−{fmtMoney(r.expenses)}</span>
+            <span className="trend-net">{r.net >= 0 ? "+" : ""}{fmtMoney(r.net)}</span>
+            <span className="trend-rate">{r.savingsRate === null ? "-" : `${Math.round(r.savingsRate * 100)}%`}</span>
+          </div>
+        ))}
+      </div>
+      <p className="footnote">
+        Every month you log builds this automatically; on the 1st, "This month" resets while the
+        finished month locks in here forever.
+      </p>
+    </section>
+  );
+}
+
 export default function Money() {
   const [entries, setEntries] = useState<LedgerEntry[]>(() => readLocal(LEDGER_KEY, []));
   const [profile, setProfile] = useState<LedgerProfile>(() => readLocal(PROFILE_KEY, {}));
@@ -91,6 +152,13 @@ export default function Money() {
   const [category, setCategory] = useState<string>("Food");
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const csvRef = useRef<HTMLInputElement>(null);
+  const [importMsg, setImportMsg] = useState("");
+  const [budgetsOpen, setBudgetsOpen] = useState(false);
+  const [budgetDraft, setBudgetDraft] = useState<Record<string, string>>({});
+  const [acctMsg, setAcctMsg] = useState("");
+  const [uname, setUname] = useState("");
+  const [pass, setPass] = useState("");
 
   // paycheck setup
   const [salaryIn, setSalaryIn] = useState(profile.salary ? String(profile.salary) : "");
@@ -147,6 +215,71 @@ export default function Money() {
     if (!profile.salary || !profile.payFreq) return;
     const amt = Math.round(paycheckFromAnnual(profile.salary, profile.payFreq) * 100) / 100;
     await addEntry({ kind: "income", amount: amt, note: "Paycheck", category: "Paycheck", ts: Date.now() });
+    const p = { ...profile, payAnchor: Date.now() };
+    setProfile(p); writeLocal(PROFILE_KEY, p);
+    saveLedgerProfile({ payAnchor: p.payAnchor });
+  };
+
+  const missed = profile.payAnchor && profile.payFreq && profile.salary
+    ? missedPaydays(profile.payAnchor, profile.payFreq)
+    : [];
+
+  const logMissed = async () => {
+    if (!profile.salary || !profile.payFreq || missed.length === 0) return;
+    const amt = Math.round(paycheckFromAnnual(profile.salary, profile.payFreq) * 100) / 100;
+    for (const ts of missed) {
+      await addEntry({ kind: "income", amount: amt, note: "Paycheck (auto)", category: "Paycheck", ts });
+    }
+    const p = { ...profile, payAnchor: missed[missed.length - 1] };
+    setProfile(p); writeLocal(PROFILE_KEY, p);
+    saveLedgerProfile({ payAnchor: p.payAnchor });
+  };
+
+  const importCsv = async (f: File | undefined) => {
+    if (!f) return;
+    setImportMsg("Reading file...");
+    const text = await f.text();
+    const { rows, skipped } = importBankCsv(text);
+    if (rows.length === 0) { setImportMsg("Could not find date/description/amount columns in that file."); return; }
+    const capped = rows.slice(0, 200);
+    setImportMsg(`Importing ${capped.length} transactions...`);
+    let done = 0;
+    for (const e of toLedgerEntries(capped)) { await addEntry(e); done++; }
+    setImportMsg(`Imported ${done} transactions, auto-categorized${skipped ? `; ${skipped} rows skipped` : ""}.`);
+  };
+
+  const saveBudgets = async () => {
+    const clean: Record<string, number> = {};
+    for (const [k, v] of Object.entries(budgetDraft)) {
+      const n = Math.round(Number(String(v).replace(/[,$\s]/g, "")));
+      if (Number.isFinite(n) && n > 0) clean[k] = n;
+    }
+    const p = { ...profile, budgets: clean };
+    setProfile(p); writeLocal(PROFILE_KEY, p);
+    saveLedgerProfile({ budgets: clean }).then(setSynced);
+    setBudgetsOpen(false);
+  };
+
+  const doClaim = async () => {
+    setAcctMsg("...");
+    const r = await claimAccount(uname.trim(), pass);
+    setAcctMsg(r.ok ? `Claimed. You can now log in as "${uname.trim().toLowerCase()}" on any device.` : r.error ?? "failed");
+  };
+  const doLogin = async () => {
+    setAcctMsg("...");
+    const r = await loginAccount(uname.trim(), pass);
+    if (r.ok) {
+      setAcctMsg("Logged in. Loading your data...");
+      const led = await fetchLedger();
+      if (led) {
+        setEntries(led.entries); writeLocal(LEDGER_KEY, led.entries);
+        setProfile(led.profile); writeLocal(PROFILE_KEY, led.profile);
+        if (led.profile.salary) setSalaryIn(String(led.profile.salary));
+        if (led.profile.payFreq) setFreq(led.profile.payFreq);
+        setSynced(true);
+        setAcctMsg("Logged in. This device now shows your account.");
+      }
+    } else setAcctMsg(r.error ?? "failed");
   };
 
   const addEntry = async (e: Omit<LedgerEntry, "id">) => {
@@ -166,7 +299,7 @@ export default function Money() {
       try {
         localStorage.setItem(RECEIPT_KEY(saved.id), receiptPreview);
       } catch {
-        /* storage full — receipt is a nicety */
+        /* storage full; receipt is a nicety */
       }
       setReceiptPreview(null);
     }
@@ -252,7 +385,7 @@ export default function Money() {
               <>
                 Your {fmtMoney(profile.salary)}/yr is <b>{ratio >= 1 ? `${ratio.toFixed(2)}×` : `${ratio.toFixed(2)}×`}</b> the
                 estimated median for your age group ({fmtMoney(medianSalaryForAge(a))}/yr).{" "}
-                {ratio >= 1 ? "You're out-earning the typical person your age." : "Below the age median — experience moves this fast at your age."}
+                {ratio >= 1 ? "You're out-earning the typical person your age." : "Below the age median; experience moves this fast at your age."}
               </>
             ) : (
               <>Add your age to compare your salary against your age group.</>
@@ -270,12 +403,12 @@ export default function Money() {
           <div className="stat"><div className="stat-v neg2">{fmtMoney(summary.expenses)}</div><div className="stat-k">expenses</div></div>
           <div className="stat"><div className="stat-v">{fmtMoney(summary.net)}</div><div className="stat-k">kept</div></div>
           <div className="stat">
-            <div className="stat-v">{summary.savingsRate === null ? "—" : `${Math.round(summary.savingsRate * 100)}%`}</div>
+            <div className="stat-v">{summary.savingsRate === null ? "-" : `${Math.round(summary.savingsRate * 100)}%`}</div>
             <div className="stat-k">savings rate</div>
           </div>
         </div>
         <div className="verdict-line">
-          <b>{verdict.title}</b>{verdict.sub && <span> — {verdict.sub}</span>}
+          <b>{verdict.title}</b>{verdict.sub && <span>; {verdict.sub}</span>}
           {summary.savingsRate !== null && summary.savingsRate < TARGET_SAVINGS_RATE && summary.savingsRate >= 0 && (
             <span> Guideline: keep ~{Math.round(TARGET_SAVINGS_RATE * 100)}% (the 50/30/20 rule).</span>
           )}
@@ -290,7 +423,60 @@ export default function Money() {
           </div>
         )}
         <Sparkline entries={entries} />
+
+        {profile.budgets && Object.keys(profile.budgets).length > 0 && (
+          <div className="budgets">
+            {budgetStatus(summary, profile.budgets).map((b) => (
+              <div className="budget-row" key={b.category}>
+                <span className="budget-name">{b.category}</span>
+                <div className="budget-bar">
+                  <div className={`budget-fill${b.over ? " over" : ""}`} style={{ width: `${Math.min(b.share, 1) * 100}%` }} />
+                </div>
+                <span className={`budget-amt${b.over ? " over-t" : ""}`}>
+                  {fmtMoney(b.spent)} / {fmtMoney(b.cap)}{b.over ? " over!" : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        <button className="builder-toggle" onClick={() => {
+          setBudgetsOpen((v) => !v);
+          if (!budgetsOpen) {
+            const d: Record<string, string> = {};
+            for (const c of CATS) d[c] = profile.budgets?.[c] ? String(profile.budgets[c]) : "";
+            setBudgetDraft(d);
+          }
+        }}>
+          {budgetsOpen ? "Hide budget editor" : profile.budgets && Object.keys(profile.budgets).length ? "Edit category budgets" : "Set category budgets"}
+        </button>
+        {budgetsOpen && (
+          <div className="builder">
+            {CATS.map((c) => (
+              <label key={c}>
+                <span>{c} monthly cap</span>
+                <input type="text" inputMode="decimal" placeholder="300" value={budgetDraft[c] ?? ""}
+                  onChange={(e) => setBudgetDraft({ ...budgetDraft, [c]: e.target.value })} />
+              </label>
+            ))}
+            <div className="builder-total">
+              <span>Leave blank for no cap</span>
+              <button className="mini" onClick={saveBudgets}>Save budgets</button>
+            </div>
+          </div>
+        )}
       </section>
+
+      {missed.length > 0 && (
+        <section className="card catchup">
+          <b>{missed.length} paycheck{missed.length > 1 ? "s" : ""} since your last log.</b>{" "}
+          Based on your {profile.payFreq} schedule, want to add {missed.length > 1 ? "them" : "it"} now?
+          <button className="mini" onClick={logMissed}>
+            Log {missed.length} paycheck{missed.length > 1 ? "s" : ""} (+{fmtMoney(Math.round(paycheckFromAnnual(profile.salary!, profile.payFreq!) * missed.length))})
+          </button>
+        </section>
+      )}
+
+      <MonthTrend entries={entries} />
 
       {/* insights */}
       {insights.length > 0 && (
@@ -298,7 +484,7 @@ export default function Money() {
           <h2 className="section-title">
             Insights
             <span className={aiInsights ? "sync-badge ai" : "sync-badge"}>
-              {aiSource === "server" ? "AI coach" : aiSource === "device" ? "on-device AI — private" : "computed from your ledger"}
+              {aiSource === "server" ? "AI coach" : aiSource === "device" ? "on-device AI (private)" : "computed from your ledger"}
             </span>
           </h2>
           <div className="insights">
@@ -310,7 +496,7 @@ export default function Money() {
             ))}
           </div>
           <p className="footnote">
-            The numbers always come from your ledger — {aiSource === "device"
+            The numbers always come from your ledger; {aiSource === "device"
               ? "phrased by AI running entirely on your device; nothing was sent anywhere."
               : aiInsights
               ? "the AI only phrases them."
@@ -327,7 +513,7 @@ export default function Money() {
             <button className={kind === "expense" ? "on" : ""} onClick={() => setKind("expense")}>Expense</button>
             <button className={kind === "income" ? "on" : ""} onClick={() => setKind("income")}>Income</button>
           </div>
-          <input type="text" inputMode="decimal" placeholder="Amount — 24.50" value={amount}
+          <input type="text" inputMode="decimal" placeholder="Amount, e.g. 24.50" value={amount}
             onChange={(e) => setAmount(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submitQuickAdd()} />
           {kind === "expense" && (
@@ -335,7 +521,7 @@ export default function Money() {
               {EXPENSE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           )}
-          <input type="text" placeholder="Note (optional) — chipotle, gas fill-up" value={note}
+          <input type="text" placeholder="Note (optional): chipotle, gas fill-up" value={note}
             onChange={(e) => setNote(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submitQuickAdd()} />
         </div>
@@ -345,12 +531,35 @@ export default function Money() {
           </button>
           <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden
             onChange={(e) => onReceipt(e.target.files?.[0])} />
+          <button className="mini alt" onClick={() => csvRef.current?.click()}>Import bank CSV</button>
+          <input ref={csvRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => importCsv(e.target.files?.[0])} />
           <button className="mini" onClick={submitQuickAdd}>Add</button>
         </div>
+        {importMsg && <p className="import-msg">{importMsg}</p>}
         {receiptPreview && <img src={receiptPreview} alt="receipt preview" className="receipt-preview" />}
         <p className="footnote">
-          Receipts stay on this device only — never uploaded. Amounts sync to your private account.
+          Receipts stay on this device only, never uploaded. Amounts sync to your private account.
         </p>
+      </section>
+
+      {/* account */}
+      <section className="card">
+        <h2 className="section-title">Your account</h2>
+        <p className="future-sub">
+          Your data saves to an anonymous account on this device. Claim a username to log in from any
+          device; there is no email or reset (keep your passphrase safe).
+        </p>
+        <div className="acct-grid">
+          <input type="text" placeholder="username (a-z, 0-9, _)" autoCapitalize="off" value={uname}
+            onChange={(e) => setUname(e.target.value)} />
+          <input type="password" placeholder="passphrase (8+ chars)" value={pass}
+            onChange={(e) => setPass(e.target.value)} />
+        </div>
+        <div className="row-btns">
+          <button className="mini" onClick={doClaim}>Claim this account</button>
+          <button className="mini alt" onClick={doLogin}>Log in on this device</button>
+        </div>
+        {acctMsg && <p className="import-msg">{acctMsg}</p>}
       </section>
 
       {/* ledger */}

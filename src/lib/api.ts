@@ -152,7 +152,7 @@ export async function deleteMyData(): Promise<boolean> {
 
 import type { LedgerEntry, PayFrequency } from "./money";
 
-export type LedgerProfile = { salary?: number; payFreq?: PayFrequency };
+export type LedgerProfile = { salary?: number; payFreq?: PayFrequency; payAnchor?: number; budgets?: Record<string, number> };
 
 export async function fetchLedger(): Promise<{ profile: LedgerProfile; entries: LedgerEntry[] } | null> {
   const token = getToken();
@@ -163,8 +163,15 @@ export async function fetchLedger(): Promise<{ profile: LedgerProfile; entries: 
     const data = await r.json();
     if (!Array.isArray(data.entries)) return null;
     const prof = data.profile ?? {};
+    let budgets: Record<string, number> | undefined;
+    try { budgets = prof.budgets ? JSON.parse(prof.budgets) : undefined; } catch { budgets = undefined; }
     return {
-      profile: { salary: prof.salary ? Number(prof.salary) : undefined, payFreq: prof.payFreq },
+      profile: {
+        salary: prof.salary ? Number(prof.salary) : undefined,
+        payFreq: prof.payFreq,
+        payAnchor: prof.payAnchor ? Number(prof.payAnchor) : undefined,
+        budgets,
+      },
       entries: data.entries as LedgerEntry[],
     };
   } catch {
@@ -234,5 +241,41 @@ export async function fetchAiInsights(facts: string[], age?: number): Promise<st
     return Array.isArray(data.insights) ? data.insights.map(String) : null;
   } catch {
     return null;
+  }
+}
+
+/* ---------- claim / login (multi-device accounts) ---------- */
+
+export async function claimAccount(username: string, passphrase: string): Promise<{ ok: boolean; error?: string }> {
+  const token = await ensureAccount();
+  if (!token) return { ok: false, error: "backend offline" };
+  try {
+    const r = await withTimeout("/api/auth", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: "claim", username, passphrase }),
+    });
+    const data = await r.json().catch(() => ({}));
+    return r.ok ? { ok: true } : { ok: false, error: data.error ?? "claim failed" };
+  } catch {
+    return { ok: false, error: "network error" };
+  }
+}
+
+export async function loginAccount(username: string, passphrase: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const r = await withTimeout("/api/auth", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "login", username, passphrase }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (r.ok && typeof data.token === "string") {
+      localStorage.setItem("wr:token", data.token); // this device now IS that account
+      return { ok: true };
+    }
+    return { ok: false, error: data.error ?? "login failed" };
+  } catch {
+    return { ok: false, error: "network error" };
   }
 }

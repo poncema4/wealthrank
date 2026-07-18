@@ -57,7 +57,7 @@ function verdict(pct: number): { title: string; sub: string } {
   if (pct >= 90) return { title: "Elite territory", sub: "You're ahead of nearly everyone your age." };
   if (pct >= 75) return { title: "Well ahead", sub: "Top quarter of your age group." };
   if (pct >= 50) return { title: "Ahead of the pack", sub: "Above the median for your age." };
-  if (pct >= 30) return { title: "In the mix", sub: "Below median, but the curve is steep — small moves matter." };
+  if (pct >= 30) return { title: "In the mix", sub: "Below median, but the curve is steep; small moves matter." };
   return { title: "Building mode", sub: "Most wealth at your age is built, not started with." };
 }
 
@@ -221,7 +221,7 @@ export default function App() {
       return;
     }
     if (netWorth.trim() === "") {
-      setError("Enter your net worth — assets minus debts. A rough estimate is fine.");
+      setError("Enter your net worth; assets minus debts. A rough estimate is fine.");
       return;
     }
     const pct = percentileFor(a, nw);
@@ -266,7 +266,7 @@ export default function App() {
         return;
       }
     } catch {
-      /* cancelled — fall through */
+      /* cancelled; fall through */
     }
     try {
       await navigator.clipboard.writeText(shareText);
@@ -285,7 +285,7 @@ export default function App() {
         </div>
         <h1>Where do you stand?</h1>
         <p className="tagline">
-          Your net worth vs. everyone your age — real Federal Reserve data, one answer, five seconds.
+          Your net worth vs. everyone your age. Real Federal Reserve data, one answer, five seconds.
           {stats && stats.totalChecks > 0 && (
             <span className="live-count"> · {stats.totalChecks.toLocaleString()} checks so far</span>
           )}
@@ -360,7 +360,7 @@ export default function App() {
                 onChange={(e) => setBuilder({ ...builder, property: e.target.value })} />
             </label>
             <label>
-              <span>Debts — loans, cards, everything</span>
+              <span>Debts: loans, cards, everything</span>
               <input type="text" inputMode="decimal" placeholder="4,000" value={builder.debt}
                 onChange={(e) => setBuilder({ ...builder, debt: e.target.value })} />
             </label>
@@ -376,7 +376,7 @@ export default function App() {
         <button className="cta" onClick={check}>
           Check my rank
         </button>
-        <p className="privacy">Anonymous — no signup, no names, nothing stored that identifies you.</p>
+        <p className="privacy">Anonymous: no signup, no names, nothing stored that identifies you.</p>
       </section>
 
       {result && bracket && (
@@ -421,7 +421,7 @@ export default function App() {
             </div>
           </div>
           <p className="footnote">
-            *the average is dragged up by a small number of very wealthy households — median is the honest
+            *the average is dragged up by a small number of very wealthy households; median is the honest
             yardstick.
           </p>
 
@@ -458,7 +458,7 @@ export default function App() {
             </div>
             <p className="footnote">
               7% ≈ the long-run inflation-adjusted return of a broad stock index. Educational math, not a
-              promise — markets vary.
+              promise; markets vary.
             </p>
           </div>
 
@@ -489,16 +489,16 @@ export default function App() {
               </div>
               <div className="goal-answer">
                 {goal.monthlyNeeded === 0 ? (
-                  <>You're already on track — {fmtMoney(goal.targetValue)} is within reach of your current
+                  <>You're already on track; {fmtMoney(goal.targetValue)} is within reach of your current
                     trajectory.</>
                 ) : goal.achievable ? (
                   <>
-                    That's <b>{fmtMoney(goal.targetValue)}</b> — you'd need about{" "}
+                    That's <b>{fmtMoney(goal.targetValue)}</b>; you'd need about{" "}
                     <b>{fmtMoney(Math.ceil(goal.monthlyNeeded / 10) * 10)}/month</b> invested at 7%.
                   </>
                 ) : (
                   <>
-                    That target ({fmtMoney(goal.targetValue)}) needs more than $5K/month from here — try a
+                    That target ({fmtMoney(goal.targetValue)}) needs more than $5K/month from here; try a
                     later age or nearer percentile.
                   </>
                 )}
@@ -528,7 +528,7 @@ export default function App() {
                 </div>
                 <p className="footnote">
                   {synced
-                    ? "Saved to your anonymous account — only you can see this. "
+                    ? "Saved to your anonymous account; only you can see this. "
                     : "Stored only in this browser. "}
                   <button
                     className="link-btn"
@@ -548,7 +548,7 @@ export default function App() {
           })()}
 
           <button className="cta share" onClick={share}>
-            {copied ? "Copied — paste it anywhere" : "Share my rank"}
+            {copied ? "Copied; paste it anywhere" : "Share my rank"}
           </button>
         </section>
       )}
@@ -558,7 +558,7 @@ export default function App() {
       <footer>
         <p>
           Data: Federal Reserve {DATA_VINTAGE}. Percentiles are estimated by fitting the published
-          median/mean per age bracket — a close approximation, not audit-grade.
+          median/mean per age bracket; a close approximation, not audit-grade.
         </p>
         <p>
           WealthRank is educational, not financial advice. Built by{" "}

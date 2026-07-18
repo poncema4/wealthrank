@@ -89,8 +89,23 @@ export default async function handler(req: Request): Promise<Response> {
     }
 
     if (req.method === "PUT") {
-      const body = (await req.json().catch(() => ({}))) as { salary?: number; payFreq?: string };
+      const body = (await req.json().catch(() => ({}))) as {
+        salary?: number; payFreq?: string; payAnchor?: number; budgets?: Record<string, number>;
+      };
       const fields: Record<string, string | number> = {};
+      if (body.payAnchor !== undefined) {
+        const a = Number(body.payAnchor);
+        if (!Number.isFinite(a) || a < 0) return json({ error: "bad payAnchor" }, 400);
+        fields.payAnchor = Math.floor(a);
+      }
+      if (body.budgets !== undefined) {
+        const clean: Record<string, number> = {};
+        for (const [k, v] of Object.entries(body.budgets ?? {})) {
+          const cap = Math.round(Number(v));
+          if (Number.isFinite(cap) && cap > 0 && cap <= 1_000_000) clean[String(k).slice(0, 24)] = cap;
+        }
+        fields.budgets = JSON.stringify(clean);
+      }
       if (body.salary !== undefined) {
         const s = Math.round(Number(body.salary));
         if (!Number.isFinite(s) || s < 0 || s > 50_000_000) return json({ error: "bad salary" }, 400);

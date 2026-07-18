@@ -1,10 +1,10 @@
 /**
- * Insights engine — the deterministic layer.
+ * Insights engine; the deterministic layer.
  *
  * Computes real observations from the user's ledger with plain math. This is
  * the ALWAYS-ON layer; when the server has an LLM key configured, /api/insights
  * rewrites these facts into sharper natural-language coaching. The facts never
- * come from the model — the model only phrases them. That split keeps the
+ * come from the model; the model only phrases them. That split keeps the
  * numbers trustworthy and the AI unable to hallucinate your finances.
  */
 
@@ -30,18 +30,18 @@ export function computeInsights(entries: LedgerEntry[], now = new Date()): Insig
     if (cur.savingsRate >= TARGET_SAVINGS_RATE) {
       out.push({
         icon: "▲",
-        text: `You're keeping ${Math.round(cur.savingsRate * 100)}% of your income this month — above the 20% guideline. That surplus is exactly what the Learn tab's compounding math feeds on.`,
+        text: `You're keeping ${Math.round(cur.savingsRate * 100)}% of your income this month, above the 20% guideline. That surplus is exactly what the Learn tab's compounding math feeds on.`,
       });
     } else if (cur.savingsRate >= 0) {
       const gap = Math.round((TARGET_SAVINGS_RATE - cur.savingsRate) * cur.income);
       out.push({
         icon: "◆",
-        text: `Your savings rate is ${Math.round(cur.savingsRate * 100)}% — about ${fmtMoney(gap)} short of the 20% guideline this month.`,
+        text: `Your savings rate is ${Math.round(cur.savingsRate * 100)}%, about ${fmtMoney(gap)} short of the 20% guideline this month.`,
       });
     } else {
       out.push({
         icon: "▼",
-        text: `You've spent ${fmtMoney(-cur.net)} more than you earned this month. Seeing it is step one — the ledger below shows exactly where.`,
+        text: `You've spent ${fmtMoney(-cur.net)} more than you earned this month. Seeing it is step one; the ledger below shows exactly where.`,
       });
     }
   }
@@ -68,7 +68,7 @@ export function computeInsights(entries: LedgerEntry[], now = new Date()): Insig
         text:
           delta > 0
             ? `Spending is up ${Math.round(delta * 100)}% vs last month (${fmtMoney(cur.expenses)} vs ${fmtMoney(old.expenses)}).`
-            : `Spending is down ${Math.round(-delta * 100)}% vs last month — ${fmtMoney(old.expenses - cur.expenses)} kept.`,
+            : `Spending is down ${Math.round(-delta * 100)}% vs last month, ${fmtMoney(old.expenses - cur.expenses)} kept.`,
       });
     }
   }
@@ -81,7 +81,7 @@ export function computeInsights(entries: LedgerEntry[], now = new Date()): Insig
     const total = small.reduce((s, e) => s + e.amount, 0);
     out.push({
       icon: "◇",
-      text: `${small.length} purchases under $25 add up to ${fmtMoney(total)} this month — the classic invisible leak.`,
+      text: `${small.length} purchases under $25 add up to ${fmtMoney(total)} this month, the classic invisible leak.`,
     });
   }
 
@@ -92,7 +92,7 @@ export function computeInsights(entries: LedgerEntry[], now = new Date()): Insig
       icon: "■",
       text:
         monthsPer <= 1
-          ? `At this month's pace you bank ${fmtMoney(cur.net)}/month — every month saved buys you a full month of runway.`
+          ? `At this month's pace you bank ${fmtMoney(cur.net)}/month; every month saved buys you a full month of runway.`
           : `At this month's pace you bank ${fmtMoney(cur.net)}/month. Every ${monthsPer} months of saving buys you one full month of runway.`,
     });
   }
