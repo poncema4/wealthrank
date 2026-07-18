@@ -252,7 +252,7 @@ export default function App() {
   const delta = result && prevEntry ? result.nw - prevEntry.nw : null;
 
   const shareText = result
-    ? `I'm ${result.age} and ahead of ${Math.round(result.pct)}% of my age group in net worth. Where do you stand? wealth-rank.vercel.app`
+    ? `I'm ${result.age} and ahead of ${Math.round(result.pct)}% of my age group in net worth. Where do you stand? wealthrank-ai.vercel.app`
     : "";
 
   const share = async () => {
