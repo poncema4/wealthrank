@@ -149,6 +149,7 @@ export default function Money() {
   const [note, setNote] = useState("");
   const [category, setCategory] = useState<string>("Food");
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [receiptBump, setReceiptBump] = useState(0); // re-render after receipt add/remove
   const fileRef = useRef<HTMLInputElement>(null);
   const csvRef = useRef<HTMLInputElement>(null);
   const [importMsg, setImportMsg] = useState("");
@@ -509,7 +510,12 @@ export default function Money() {
           <button className="mini" onClick={submitQuickAdd}>Add</button>
         </div>
         {importMsg && <p className="import-msg">{importMsg}</p>}
-        {receiptPreview && <img src={receiptPreview} alt="receipt preview" className="receipt-preview" />}
+        {receiptPreview && (
+          <div className="receipt-wrap">
+            <img src={receiptPreview} alt="receipt preview" className="receipt-preview" />
+            <button className="receipt-x" onClick={() => setReceiptPreview(null)} aria-label="remove attached receipt">×</button>
+          </div>
+        )}
         <p className="footnote">
           Receipts stay on this device only, never uploaded. Amounts sync to your private account.
         </p>
@@ -520,7 +526,7 @@ export default function Money() {
         <section className="card">
           <h2 className="section-title">Ledger</h2>
           <div className="ledger">
-            {[...entries].sort((x, y) => y.ts - x.ts).slice(0, 30).map((e) => {
+            {receiptBump >= 0 && [...entries].sort((x, y) => y.ts - x.ts).slice(0, 30).map((e) => {
               let receipt: string | null = null;
               try { receipt = localStorage.getItem(RECEIPT_KEY(e.id)); } catch { /* noop */ }
               return (
@@ -532,7 +538,19 @@ export default function Money() {
                     {e.note || e.category}
                     <em>{e.category}</em>
                   </span>
-                  {receipt && <img src={receipt} alt="receipt" className="ledger-receipt" />}
+                  {receipt && (
+                    <span className="receipt-wrap sm">
+                      <img src={receipt} alt="receipt" className="ledger-receipt" />
+                      <button
+                        className="receipt-x sm"
+                        aria-label="remove receipt from this entry"
+                        onClick={() => {
+                          try { localStorage.removeItem(RECEIPT_KEY(e.id)); } catch { /* noop */ }
+                          setReceiptBump((v) => v + 1);
+                        }}
+                      >×</button>
+                    </span>
+                  )}
                   <span className={`ledger-amt ${e.kind === "income" ? "pos" : "neg2"}`}>
                     {e.kind === "income" ? "+" : "−"}{fmtMoney(e.amount)}
                   </span>
