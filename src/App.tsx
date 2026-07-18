@@ -297,27 +297,46 @@ export default function App() {
 
   return (
     <div className="wrap">
-      <header className="hero">
+      <nav className="topbar">
+        <div className="topbar-logo">
+          Wealth<span>Rank</span>
+        </div>
+        <div className="topbar-links">
+          <button className={tab === "rank" ? "on" : ""} onClick={() => setTab("rank")}>Rank</button>
+          <button className={tab === "money" ? "on" : ""} onClick={() => setTab("money")}>Money</button>
+          <button className={tab === "learn" ? "on" : ""} onClick={() => setTab("learn")}>Learn</button>
+        </div>
         <button className={savedUsername() ? "acct-btn in" : "acct-btn"} onClick={() => setAcctOpen((v) => !v)}>
           {savedUsername() || "Account"}
         </button>
-        <div className="logo">
-          Wealth<span>Rank</span>
-        </div>
-        <h1>Where do you stand?</h1>
-        <p className="tagline">
-          Your net worth vs. everyone your age. Real Federal Reserve data, one answer, five seconds.
-          {stats && stats.totalChecks > 0 && (
-            <span className="live-count"> · {stats.totalChecks.toLocaleString()} checks so far</span>
-          )}
-        </p>
-      </header>
-
-      <nav className="tabs" aria-label="sections">
-        <button className={tab === "rank" ? "on" : ""} onClick={() => setTab("rank")}>Rank</button>
-        <button className={tab === "money" ? "on" : ""} onClick={() => setTab("money")}>Money</button>
-        <button className={tab === "learn" ? "on" : ""} onClick={() => setTab("learn")}>Learn</button>
       </nav>
+
+      {tab === "rank" && (
+        <header className="page-head">
+          <div className="kicker">Net worth · percentile vs your age group</div>
+          <h1>Where do you stand?</h1>
+          <p className="tagline">
+            Your net worth vs. everyone your age. Real Federal Reserve data, one answer, five seconds.
+            {stats && stats.totalChecks > 0 && (
+              <span className="live-count"> · {stats.totalChecks.toLocaleString()} checks so far</span>
+            )}
+          </p>
+        </header>
+      )}
+      {tab === "money" && (
+        <header className="page-head">
+          <div className="kicker">Ledger · paychecks, spending, benchmarks</div>
+          <h1>Your money</h1>
+          <p className="tagline">Track what comes in and goes out, and see how you compare to the country.</p>
+        </header>
+      )}
+      {tab === "learn" && (
+        <header className="page-head">
+          <div className="kicker">Education · investing fundamentals, your numbers</div>
+          <h1>Make it grow</h1>
+          <p className="tagline">The math and the order of operations, computed from your own ledger.</p>
+        </header>
+      )}
 
       {acctOpen && <Account onClose={() => setAcctOpen(false)} />}
 

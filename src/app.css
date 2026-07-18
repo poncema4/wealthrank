@@ -597,3 +597,33 @@ footer a { color: var(--accent-2); text-decoration: none; }
 .takehome-v { font-weight: 800; font-size: 1rem; }
 .takehome-k { color: var(--muted); font-size: 0.68rem; margin-top: 2px; }
 .hint-link { color: var(--accent-2); font-weight: 400; text-decoration: underline dotted; font-size: 0.75rem; }
+
+/* ---------- FlightDeck-style top bar ---------- */
+.topbar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 2px; border-bottom: 1px solid var(--line); margin-bottom: 4px;
+}
+.topbar-logo { font-weight: 800; letter-spacing: 0.4px; color: var(--muted); flex-shrink: 0; }
+.topbar-logo span { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.topbar-links { display: flex; gap: 4px; flex: 1; }
+.topbar-links button {
+  background: none; border: none; color: var(--muted);
+  font-size: 0.9rem; font-weight: 700; padding: 8px 12px; cursor: pointer;
+  border-bottom: 2px solid transparent; border-radius: 0;
+}
+.topbar-links button.on { color: var(--text); border-bottom-color: var(--accent); }
+.topbar .acct-btn { position: static; }
+.page-head { padding: 22px 0 4px; }
+.kicker { color: var(--accent-2); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.4px; text-transform: none; }
+.page-head h1 { font-size: clamp(1.6rem, 5vw, 2.2rem); font-weight: 800; letter-spacing: -0.02em; margin-top: 6px; }
+.page-head .tagline { margin-top: 6px; text-align: left; }
+.hero { display: none; }
+
+/* topbar responsiveness */
+.topbar { flex-wrap: wrap; }
+.topbar .acct-btn { margin-left: auto; }
+@media (max-width: 480px) {
+  .topbar { gap: 8px; }
+  .topbar-links { order: 3; width: 100%; justify-content: space-around; }
+  .topbar-links button { padding: 6px 8px; }
+}
