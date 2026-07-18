@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  DATA_VINTAGE,
   MIN_AGE,
   MAX_AGE,
   bracketForAge,
