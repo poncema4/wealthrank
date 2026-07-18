@@ -103,7 +103,8 @@ export default async function handler(req: Request): Promise<Response> {
     }
 
     if (req.method === "DELETE") {
-      await Promise.all([redis.del(histKey), redis.del(`wr:user:${userId}`)]);
+      // erase EVERYTHING the user owns: history, ledger, profile (right-to-forget)
+      await Promise.all([redis.del(histKey), redis.del(`wr:led:${userId}`), redis.del(`wr:user:${userId}`)]);
       // the token row is deleted by the client forgetting it; sweep it too if sent
       const auth = req.headers.get("authorization") ?? "";
       const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
