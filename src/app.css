@@ -596,3 +596,4 @@ footer a { color: var(--accent-2); text-decoration: none; }
 .takehome-cell.current { border-color: rgba(61, 220, 132, 0.5); background: rgba(61, 220, 132, 0.06); }
 .takehome-v { font-weight: 800; font-size: 1rem; }
 .takehome-k { color: var(--muted); font-size: 0.68rem; margin-top: 2px; }
+.hint-link { color: var(--accent-2); font-weight: 400; text-decoration: underline dotted; font-size: 0.75rem; }

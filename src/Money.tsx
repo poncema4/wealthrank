@@ -21,7 +21,7 @@ import { computeInsights } from "./lib/insights";
 import { localAiInsights } from "./lib/localAi";
 import { importBankCsv, toLedgerEntries } from "./lib/csv";
 import { compareShares, savingsVsNation, CEX_VINTAGE } from "./lib/benchmarks";
-import { takeHome, TAX_VINTAGE, type StateChoice } from "./lib/tax";
+import { takeHome, TAX_VINTAGE, ALL_STATES, choiceForState, NO_TAX_STATES, STATE_RATE_LOOKUP_URL, type StateChoice } from "./lib/tax";
 import {
   fetchLedger,
   addLedgerEntry,
@@ -350,16 +350,33 @@ export default function Money() {
             </select>
           </label>
           <label>
-            <span>State tax</span>
-            <select value={stateChoice} onChange={(e) => { setStateChoice(e.target.value as StateChoice); writeLocal("wr:taxstate", e.target.value); }}>
-              <option value="none">No state income tax (TX, FL, WA...)</option>
-              <option value="NJ">New Jersey</option>
-              <option value="custom">Other state (enter %)</option>
+            <span>Your state (search)</span>
+            <select
+              value={readLocal("wr:taxstatecode", "")}
+              onChange={(e) => {
+                const code = e.target.value;
+                writeLocal("wr:taxstatecode", code);
+                const mode = choiceForState(code);
+                setStateChoice(mode);
+                writeLocal("wr:taxstate", mode);
+              }}
+            >
+              <option value="">Pick your state...</option>
+              {ALL_STATES.map(([code, name]) => (
+                <option key={code} value={code}>
+                  {name}{NO_TAX_STATES.includes(code) ? " (no income tax)" : ""}
+                </option>
+              ))}
             </select>
           </label>
           {stateChoice === "custom" && (
             <label>
-              <span>Your state's income tax rate (%)</span>
+              <span>
+                State income tax rate (%){" "}
+                <a className="hint-link" href={STATE_RATE_LOOKUP_URL} target="_blank" rel="noreferrer">
+                  find your state's rate
+                </a>
+              </span>
               <input type="text" inputMode="decimal" placeholder="5" value={customRate}
                 onChange={(e) => { setCustomRate(e.target.value); writeLocal("wr:taxrate", e.target.value); }} />
             </label>

@@ -69,3 +69,29 @@ export function takeHome(salary: number, state: StateChoice, customRate = 0): Ta
   const net = gross - federal - fica - stateTax;
   return { gross, federal, fica, state: stateTax, net, effectiveRate: gross > 0 ? (federal + fica + stateTax) / gross : 0 };
 }
+
+/* ---------- all-state picker support ---------- */
+
+export const ALL_STATES: [string, string][] = [
+  ["AL","Alabama"],["AK","Alaska"],["AZ","Arizona"],["AR","Arkansas"],["CA","California"],
+  ["CO","Colorado"],["CT","Connecticut"],["DE","Delaware"],["FL","Florida"],["GA","Georgia"],
+  ["HI","Hawaii"],["ID","Idaho"],["IL","Illinois"],["IN","Indiana"],["IA","Iowa"],
+  ["KS","Kansas"],["KY","Kentucky"],["LA","Louisiana"],["ME","Maine"],["MD","Maryland"],
+  ["MA","Massachusetts"],["MI","Michigan"],["MN","Minnesota"],["MS","Mississippi"],["MO","Missouri"],
+  ["MT","Montana"],["NE","Nebraska"],["NV","Nevada"],["NH","New Hampshire"],["NJ","New Jersey"],
+  ["NM","New Mexico"],["NY","New York"],["NC","North Carolina"],["ND","North Dakota"],["OH","Ohio"],
+  ["OK","Oklahoma"],["OR","Oregon"],["PA","Pennsylvania"],["RI","Rhode Island"],["SC","South Carolina"],
+  ["SD","South Dakota"],["TN","Tennessee"],["TX","Texas"],["UT","Utah"],["VT","Vermont"],
+  ["VA","Virginia"],["WA","Washington"],["WV","West Virginia"],["WI","Wisconsin"],["WY","Wyoming"],
+];
+
+/** Route a picked state to the right computation mode. Exact math where we
+ * have verified brackets (NJ) or a legal zero (the nine no-tax states);
+ * user-supplied rate everywhere else, with a link to look it up. */
+export function choiceForState(code: string): StateChoice {
+  if (code === "NJ") return "NJ";
+  if (NO_TAX_STATES.includes(code)) return "none";
+  return "custom";
+}
+
+export const STATE_RATE_LOOKUP_URL = "https://taxfoundation.org/data/all/state/state-income-tax-rates/";
