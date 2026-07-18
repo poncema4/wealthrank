@@ -14,6 +14,7 @@ import {
 } from "./lib/money";
 import { fmtMoney } from "./lib/percentile";
 import { computeInsights } from "./lib/insights";
+import { localAiInsights } from "./lib/localAi";
 import {
   fetchLedger,
   addLedgerEntry,
@@ -116,13 +117,20 @@ export default function Money() {
   const verdict = savingsVerdict(summary.savingsRate);
   const insights = useMemo(() => computeInsights(entries), [entries]);
   const [aiInsights, setAiInsights] = useState<string[] | null>(null);
+  const [aiSource, setAiSource] = useState<"server" | "device" | null>(null);
 
   useEffect(() => {
-    if (insights.length === 0) { setAiInsights(null); return; }
+    if (insights.length === 0) { setAiInsights(null); setAiSource(null); return; }
     const facts = insights.map((i) => i.text);
-    const t = setTimeout(() => {
-      fetchAiInsights(facts, Number(age) || undefined).then(setAiInsights);
-    }, 800); // debounce: don't hammer the LLM on every keystroke of entries
+    const t = setTimeout(async () => {
+      // chain: server LLM (if a key is configured) -> on-device Gemini Nano
+      // (Chrome built-in, keyless + private) -> deterministic layer
+      const server = await fetchAiInsights(facts, Number(age) || undefined);
+      if (server) { setAiInsights(server); setAiSource("server"); return; }
+      const local = await localAiInsights(facts, Number(age) || undefined);
+      if (local) { setAiInsights(local); setAiSource("device"); return; }
+      setAiInsights(null); setAiSource(null);
+    }, 800); // debounce: don't hammer models on every keystroke of entries
     return () => clearTimeout(t);
   }, [insights, age]);
 
@@ -290,7 +298,7 @@ export default function Money() {
           <h2 className="section-title">
             Insights
             <span className={aiInsights ? "sync-badge ai" : "sync-badge"}>
-              {aiInsights ? "AI coach" : "computed from your ledger"}
+              {aiSource === "server" ? "AI coach" : aiSource === "device" ? "on-device AI — private" : "computed from your ledger"}
             </span>
           </h2>
           <div className="insights">
@@ -302,7 +310,11 @@ export default function Money() {
             ))}
           </div>
           <p className="footnote">
-            The numbers always come from your ledger — {aiInsights ? "the AI only phrases them." : "AI phrasing activates when the server has a model key configured."}
+            The numbers always come from your ledger — {aiSource === "device"
+              ? "phrased by AI running entirely on your device; nothing was sent anywhere."
+              : aiInsights
+              ? "the AI only phrases them."
+              : "AI phrasing activates automatically in browsers with built-in AI (Chrome), or when the server has a model key."}
           </p>
         </section>
       )}
