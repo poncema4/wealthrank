@@ -395,7 +395,7 @@ footer a { color: var(--accent-2); text-decoration: none; }
   padding: 13px 12px;
   font-size: 1rem;
 }
-.row-btns { display: flex; gap: 10px; margin-top: 12px; align-items: center; }
+.row-btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; align-items: center; }
 .mini.alt { background: var(--card-2); color: var(--accent); border: 1px solid rgba(61,220,132,0.35); margin-left: 0; }
 .salary-compare {
   margin-top: 14px;
@@ -422,6 +422,8 @@ footer a { color: var(--accent-2); text-decoration: none; }
 .add-grid { display: grid; grid-template-columns: auto 1fr 1fr 1.4fr; gap: 10px; align-items: center; }
 @media (max-width: 640px) { .add-grid { grid-template-columns: 1fr; } }
 .kind-toggle { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.kind-toggle button { flex: 1; }
+.add-grid input, .add-grid select { min-width: 0; }
 .kind-toggle button {
   background: var(--card-2); color: var(--muted); border: none; padding: 12px 14px;
   font-weight: 700; font-size: 0.85rem; cursor: pointer;

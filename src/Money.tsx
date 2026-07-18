@@ -64,25 +64,39 @@ async function fileToThumbnail(file: File, maxDim = 480): Promise<string | null>
     canvas.getContext("2d")!.drawImage(src, 0, 0, canvas.width, canvas.height);
     return canvas.toDataURL("image/jpeg", 0.7);
   };
+  // onload-based <img> loader: img.decode() rejects on iOS Safari for large
+  // camera captures (EncodingError), while onload succeeds for the same file
+  const viaImg = (src: string): Promise<string | null> =>
+    new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        try { resolve(draw(img.naturalWidth, img.naturalHeight, img)); }
+        catch { resolve(null); }
+      };
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
   try {
     const bmp = await createImageBitmap(file);
     return draw(bmp.width, bmp.height, bmp);
   } catch {
-    /* fall through to the <img> path */
+    /* fall through */
   }
+  const url = URL.createObjectURL(file);
   try {
-    const url = URL.createObjectURL(file);
-    try {
-      const img = new Image();
-      img.src = url;
-      await img.decode();
-      return draw(img.naturalWidth, img.naturalHeight, img);
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  } catch {
-    return null;
+    const fromUrl = await viaImg(url);
+    if (fromUrl) return fromUrl;
+  } finally {
+    URL.revokeObjectURL(url);
   }
+  // last resort: FileReader data URL, the most compatible path old iOS has
+  const dataUrl = await new Promise<string | null>((resolve) => {
+    const r = new FileReader();
+    r.onload = () => resolve(typeof r.result === "string" ? r.result : null);
+    r.onerror = () => resolve(null);
+    r.readAsDataURL(file);
+  });
+  return dataUrl ? viaImg(dataUrl) : null;
 }
 
 function Sparkline({ entries }: { entries: LedgerEntry[] }) {
@@ -601,7 +615,7 @@ export default function Money() {
             <button className={kind === "expense" ? "on" : ""} onClick={() => setKind("expense")}>Expense</button>
             <button className={kind === "income" ? "on" : ""} onClick={() => setKind("income")}>Income</button>
           </div>
-          <input type="text" inputMode="decimal" placeholder="Amount, e.g. 24.50" value={amount}
+          <input type="text" inputMode="decimal" placeholder="Amount" value={amount}
             onChange={(e) => setAmount(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submitQuickAdd()} />
           {kind === "expense" && (
@@ -609,7 +623,7 @@ export default function Money() {
               {EXPENSE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           )}
-          <input type="text" placeholder="Note (optional): chipotle, gas fill-up" value={note}
+          <input type="text" placeholder="Note: chipotle, gas..." value={note}
             onChange={(e) => setNote(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submitQuickAdd()} />
         </div>
@@ -617,7 +631,7 @@ export default function Money() {
           <button className="mini alt" onClick={() => fileRef.current?.click()}>
             {receiptPreview ? "Receipt attached" : "Snap receipt"}
           </button>
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden
+          <input ref={fileRef} type="file" accept="image/*" hidden
             onChange={(e) => onReceipt(e.target.files?.[0])} />
           <button className="mini alt" onClick={() => csvRef.current?.click()}>Import bank CSV</button>
           <input ref={csvRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => importCsv(e.target.files?.[0])} />

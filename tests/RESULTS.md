@@ -49,3 +49,30 @@ Desktop 1280px and mobile 390px, production build:
 - /api/og 200 image/png (generic + personalized), manifest + icon 200
 - /api/insights 503 without a model key (clean degradation to local layers)
 - deployed bundle hash == locally tested build at every ship
+
+## Layer 4: Playwright e2e suite (added 2026-07-18 evening)
+
+Runnable browser tests now live in `tests/e2e/app.spec.ts` (config: `playwright.config.ts`).
+Run with `npx playwright test` — they execute against the LIVE site on two devices:
+a desktop Chrome viewport and an iPhone 14 viewport. Failure artifacts land in
+`tests/test-results/` (gitignored).
+
+Latest run vs https://wealthrank-ai.vercel.app: 16 passed, 0 failed (8 tests x 2 devices).
+
+Covered: rank percentile calc, URL routing (/money, /learn), account modal open/close
+with password field, 50 states + DC in the tax dropdown (52 options), VA-vs-TX take-home
+difference after Save, bank CSV import of tests/fixtures/test-bank.csv (5 rows categorized),
+receipt attach success message, Learn projections, and a no-horizontal-overflow check on
+every tab at phone width.
+
+Note: this suite CAUGHT a real bug on first run — DC had a full tax table in the engine
+but was missing from the dropdown, so a DC user could never select it. Fixed same day.
+
+## iPhone receipt hardening (2026-07-18 evening)
+
+Camera photos on iOS failed for some captures because img.decode() and createImageBitmap
+both have known iOS Safari failures on large images. The decoder is now 3 paths:
+createImageBitmap -> objectURL + img.onload -> FileReader dataURL + img.onload (the most
+compatible path iOS has). The capture attribute was removed so iPhones offer
+"Take Photo OR Photo Library" (library picks are auto-converted to JPEG by iOS).
+On failure the message now names the file format and size so any report self-diagnoses.
