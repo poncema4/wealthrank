@@ -541,3 +541,47 @@ footer a { color: var(--accent-2); text-decoration: none; }
 .share-row em { font-style: normal; font-size: 0.78rem; margin-left: 6px; }
 .share-row em.hot { color: #ff9d6b; }
 .share-row em.cool { color: var(--accent); }
+
+/* ---------- sign-in modal ---------- */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(4, 7, 10, 0.75);
+  backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal {
+  position: relative;
+  width: 100%; max-width: 400px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 30px 26px 22px;
+  animation: rise 0.22s ease-out;
+}
+.modal-x {
+  position: absolute; top: 12px; right: 14px;
+  background: none; border: none; color: var(--muted);
+  font-size: 1.4rem; cursor: pointer; line-height: 1;
+}
+.modal-logo { text-align: center; font-weight: 800; color: var(--muted); letter-spacing: 0.5px; margin-bottom: 16px; }
+.modal-logo span { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.modal-title { text-align: center; font-size: 1.35rem; font-weight: 800; }
+.modal-sub { text-align: center; color: var(--muted); font-size: 0.85rem; margin: 4px 0 18px; }
+.modal-field { display: block; margin-bottom: 14px; }
+.modal-field > span { display: block; font-size: 0.78rem; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+.pass-wrap { position: relative; }
+.pass-wrap input { padding-right: 62px; }
+.pass-eye {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: var(--accent-2);
+  font-size: 0.78rem; font-weight: 700; cursor: pointer;
+}
+.modal-cta { margin-top: 6px; }
+.modal-msg { margin-top: 12px; font-size: 0.85rem; color: var(--danger); text-align: center; }
+.modal-msg.good { color: var(--accent); }
+.modal-switch { text-align: center; margin-top: 16px; font-size: 0.85rem; color: var(--muted); }
+.link-btn2 { background: none; border: none; color: var(--accent-2); font-size: inherit; font-weight: 700; cursor: pointer; padding: 0; }
+.modal-note { text-align: center; color: var(--muted); font-size: 0.7rem; line-height: 1.5; margin-top: 14px; }
+.center-col { flex-direction: column; text-align: center; gap: 8px; }
+.acct-avatar.lg { width: 62px; height: 62px; font-size: 1.7rem; margin: 0 auto; }
