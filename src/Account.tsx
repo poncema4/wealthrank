@@ -91,14 +91,14 @@ export default function Account({ onClose }: { onClose: () => void }) {
                 onKeyDown={(e) => e.key === "Enter" && submit()} />
             </label>
             <label className="modal-field">
-              <span>Passphrase</span>
+              <span>Password</span>
               <div className="pass-wrap">
                 <input type={showPass ? "text" : "password"} placeholder="8+ characters"
                   autoComplete={mode === "claim" ? "new-password" : "current-password"}
                   value={pass} onChange={(e) => setPass(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && submit()} />
                 <button type="button" className="pass-eye" onClick={() => setShowPass((v) => !v)}
-                  aria-label={showPass ? "hide passphrase" : "show passphrase"}>
+                  aria-label={showPass ? "hide password" : "show password"}>
                   {showPass ? "Hide" : "Show"}
                 </button>
               </div>
@@ -119,7 +119,7 @@ export default function Account({ onClose }: { onClose: () => void }) {
                   <button className="link-btn2" onClick={() => { setMode("claim"); setMsg(""); }}>Create an account</button></>
               )}
             </div>
-            <p className="modal-note">No email, no tracking. There is no reset in v1, so keep your passphrase safe.</p>
+            <p className="modal-note">No email, no tracking. There is no reset in v1, so keep your password safe.</p>
           </>
         )}
       </div>

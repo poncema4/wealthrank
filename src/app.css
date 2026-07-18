@@ -87,7 +87,7 @@ label span {
   font-weight: 400;
 }
 
-input[type="number"], input[type="text"] {
+input[type="number"], input[type="text"], input[type="password"] {
   width: 100%;
   background: var(--card-2);
   border: 1px solid var(--line);

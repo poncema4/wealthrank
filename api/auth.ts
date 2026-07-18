@@ -94,7 +94,7 @@ export default async function handler(req: Request): Promise<Response> {
     if (!USERNAME_RE.test(username))
       return json({ error: "username must be 3-20 chars: a-z, 0-9, underscore" }, 400);
     if (passphrase.length < MIN_PASS)
-      return json({ error: `passphrase must be at least ${MIN_PASS} characters` }, 400);
+      return json({ error: `password must be at least ${MIN_PASS} characters` }, 400);
 
     /* ---------- claim: bind username+passphrase to the CALLER's account ---------- */
     if (action === "claim") {

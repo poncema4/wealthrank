@@ -173,7 +173,23 @@ function num(s: string): number {
 /* ==================================================================== */
 
 export default function App() {
-  const [tab, setTab] = useState<"rank" | "money" | "learn">("rank");
+  type Tab = "rank" | "money" | "learn";
+  const tabFromPath = (): Tab => {
+    const seg = window.location.pathname.replace(/^\/+|\/+$/g, "");
+    return seg === "money" || seg === "learn" ? seg : "rank";
+  };
+  const [tab, setTabState] = useState<Tab>(tabFromPath);
+  const setTab = (t: Tab) => {
+    setTabState(t);
+    const path = t === "rank" ? "/" : `/${t}`;
+    if (window.location.pathname !== path) window.history.pushState({}, "", path);
+  };
+  useEffect(() => {
+    const onPop = () => setTabState(tabFromPath());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [acctOpen, setAcctOpen] = useState(false);
   const [age, setAge] = useState("");
   const [netWorth, setNetWorth] = useState("");
