@@ -15,7 +15,7 @@
 import { next } from "@vercel/edge";
 import { Redis } from "@upstash/redis";
 
-export const config = { matcher: "/api/me" };
+export const config = { matcher: ["/api/me", "/api/ledger"] };
 
 function makeRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL ?? "";

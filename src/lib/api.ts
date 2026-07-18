@@ -147,3 +147,75 @@ export async function deleteMyData(): Promise<boolean> {
     return false;
   }
 }
+
+/* ---------- per-user ledger (paychecks + expenses) ---------- */
+
+import type { LedgerEntry, PayFrequency } from "./money";
+
+export type LedgerProfile = { salary?: number; payFreq?: PayFrequency };
+
+export async function fetchLedger(): Promise<{ profile: LedgerProfile; entries: LedgerEntry[] } | null> {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const r = await withTimeout("/api/ledger", { headers: { authorization: `Bearer ${token}` } });
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (!Array.isArray(data.entries)) return null;
+    const prof = data.profile ?? {};
+    return {
+      profile: { salary: prof.salary ? Number(prof.salary) : undefined, payFreq: prof.payFreq },
+      entries: data.entries as LedgerEntry[],
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function addLedgerEntry(
+  e: Omit<LedgerEntry, "id">
+): Promise<LedgerEntry | null> {
+  const token = await ensureAccount();
+  if (!token) return null;
+  try {
+    const r = await withTimeout("/api/ledger", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+      body: JSON.stringify(e),
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    return (data.entry as LedgerEntry) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteLedgerEntry(id: string): Promise<boolean> {
+  const token = getToken();
+  if (!token) return false;
+  try {
+    const r = await withTimeout(`/api/ledger?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function saveLedgerProfile(p: LedgerProfile): Promise<boolean> {
+  const token = await ensureAccount();
+  if (!token) return false;
+  try {
+    const r = await withTimeout("/api/ledger", {
+      method: "PUT",
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+      body: JSON.stringify(p),
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}

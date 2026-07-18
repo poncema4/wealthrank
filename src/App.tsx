@@ -11,6 +11,8 @@ import {
   monthlyForGoal,
   fmtMoney,
 } from "./lib/percentile";
+import Money from "./Money";
+import Learn from "./Learn";
 import {
   submitCheck,
   fetchStats,
@@ -170,6 +172,7 @@ function num(s: string): number {
 /* ==================================================================== */
 
 export default function App() {
+  const [tab, setTab] = useState<"rank" | "money" | "learn">("rank");
   const [age, setAge] = useState("");
   const [netWorth, setNetWorth] = useState("");
   const [builderOpen, setBuilderOpen] = useState(false);
@@ -289,6 +292,16 @@ export default function App() {
         </p>
       </header>
 
+      <nav className="tabs" aria-label="sections">
+        <button className={tab === "rank" ? "on" : ""} onClick={() => setTab("rank")}>Rank</button>
+        <button className={tab === "money" ? "on" : ""} onClick={() => setTab("money")}>Money</button>
+        <button className={tab === "learn" ? "on" : ""} onClick={() => setTab("learn")}>Learn</button>
+      </nav>
+
+      {tab === "money" && <Money />}
+      {tab === "learn" && <Learn />}
+
+      {tab === "rank" && <>
       <section className="card input-card">
         <div className="fields">
           <label>
@@ -539,6 +552,8 @@ export default function App() {
           </button>
         </section>
       )}
+
+      </>}
 
       <footer>
         <p>
