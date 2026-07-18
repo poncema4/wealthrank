@@ -599,8 +599,10 @@ export default function App() {
 
       <footer>
         <p>
-          Data: Federal Reserve {DATA_VINTAGE}. Percentiles are estimated by fitting the published
-          median/mean per age bracket; a close approximation, not audit-grade.
+          Data vintages: taxes IRS tax year 2026 · income BLS Q1 2026 · saving rate BEA May 2026 ·
+          spending shares BLS CEX (latest) · state brackets Tax Foundation (latest) · net worth
+          Federal Reserve SCF, the latest official wealth survey (its 2026 refresh publishes in
+          October and drops straight in). Percentiles are fitted estimates, not audit-grade.
         </p>
         <p>
           WealthRank is educational, not financial advice. Built by{" "}

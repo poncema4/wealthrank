@@ -17,7 +17,7 @@
  * go through a lognormal; we floor them at the 5th percentile.
  */
 
-export const DATA_VINTAGE = "2022 SCF (latest official as of Jul 2026)";
+export const DATA_VINTAGE = "Federal Reserve SCF, the latest official wealth survey (2026 refresh auto-adopted when the Fed publishes it in Oct 2026)";
 
 export type Bracket = {
   key: string;

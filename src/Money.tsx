@@ -486,6 +486,23 @@ export default function Money() {
         )}
         <Sparkline entries={entries} />
 
+        {summary.income > 0 && (
+          <button
+            className="mini alt"
+            style={{ marginTop: 12 }}
+            onClick={async () => {
+              const rate = summary.savingsRate === null ? "" : `, kept ${Math.round(summary.savingsRate * 100)}% of my income`;
+              const text = `My month on WealthRank: ${fmtMoney(summary.income)} in, ${fmtMoney(summary.expenses)} out${rate}. Track yours: wealthrank-ai.vercel.app`;
+              try {
+                if (navigator.share) { await navigator.share({ text }); return; }
+              } catch { /* cancelled */ }
+              try { await navigator.clipboard.writeText(text); setImportMsg("Month summary copied. Paste it anywhere."); } catch { /* blocked */ }
+            }}
+          >
+            Share my month
+          </button>
+        )}
+
         {profile.budgets && Object.keys(profile.budgets).length > 0 && (
           <div className="budgets">
             {budgetStatus(summary, profile.budgets).map((b) => (
