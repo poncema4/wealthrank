@@ -52,16 +52,34 @@ function writeLocal(key: string, v: unknown) {
   }
 }
 
-/** Downscale a camera photo to a small thumbnail so localStorage survives. */
+/** Downscale a camera photo to a small thumbnail so localStorage survives.
+ * Two decode paths: createImageBitmap (fast), then an <img> element fallback
+ * for browsers/formats where the first fails. Never fails silently. */
 async function fileToThumbnail(file: File, maxDim = 480): Promise<string | null> {
+  const draw = (w: number, h: number, src: CanvasImageSource): string => {
+    const scale = Math.min(1, maxDim / Math.max(w, h));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(Math.round(w * scale), 1);
+    canvas.height = Math.max(Math.round(h * scale), 1);
+    canvas.getContext("2d")!.drawImage(src, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.7);
+  };
   try {
     const bmp = await createImageBitmap(file);
-    const scale = Math.min(1, maxDim / Math.max(bmp.width, bmp.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(bmp.width * scale);
-    canvas.height = Math.round(bmp.height * scale);
-    canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL("image/jpeg", 0.7);
+    return draw(bmp.width, bmp.height, bmp);
+  } catch {
+    /* fall through to the <img> path */
+  }
+  try {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      img.src = url;
+      await img.decode();
+      return draw(img.naturalWidth, img.naturalHeight, img);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
   } catch {
     return null;
   }
@@ -318,8 +336,12 @@ export default function Money() {
 
   const onReceipt = async (f: File | undefined) => {
     if (!f) return;
+    setImportMsg("Reading photo...");
     const thumb = await fileToThumbnail(f);
     setReceiptPreview(thumb);
+    setImportMsg(thumb
+      ? "Receipt attached. Add the amount and hit Add."
+      : "Could not read that photo. Try again, or use a different image.");
   };
 
   const a = Math.floor(Number(age));
