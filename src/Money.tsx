@@ -641,7 +641,7 @@ export default function Money() {
         {receiptPreview && (
           <div className="receipt-wrap">
             <img src={receiptPreview} alt="receipt preview" className="receipt-preview" />
-            <button className="receipt-x" onClick={() => setReceiptPreview(null)} aria-label="remove attached receipt">×</button>
+            <button className="receipt-x" onClick={() => { setReceiptPreview(null); setImportMsg("Receipt removed."); }} aria-label="remove attached receipt">×</button>
           </div>
         )}
         <p className="footnote">

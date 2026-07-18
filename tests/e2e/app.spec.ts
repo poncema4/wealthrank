@@ -89,6 +89,9 @@ test.describe("Money: ledger features", () => {
       buffer: TINY_PNG,
     });
     await expect(page.locator(".import-msg")).toContainText(/receipt attached/i, { timeout: 20_000 });
+    // removing the attachment must also clear the stale "attached" message
+    await page.locator(".receipt-x").click();
+    await expect(page.locator(".import-msg")).toContainText(/receipt removed/i);
   });
 });
 
