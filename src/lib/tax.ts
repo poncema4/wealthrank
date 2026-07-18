@@ -24,15 +24,6 @@ const FEDERAL: [number, number][] = [
   [Infinity, 0.37],
 ];
 
-const NJ: [number, number][] = [
-  [20_000, 0.014],
-  [35_000, 0.0175],
-  [40_000, 0.035],
-  [75_000, 0.05525],
-  [500_000, 0.0637],
-  [1_000_000, 0.0897],
-  [Infinity, 0.1075],
-];
 
 function bracketTax(taxable: number, brackets: [number, number][]): number {
   let tax = 0, prev = 0;
@@ -46,6 +37,8 @@ function bracketTax(taxable: number, brackets: [number, number][]): number {
 
 export const NO_TAX_STATES = ["AK", "FL", "NV", "NH", "SD", "TN", "TX", "WA", "WY"];
 
+import { stateTaxOnWages, STATE_TAX } from "./stateTax";
+
 export type StateChoice = "none" | "NJ" | "custom";
 
 export type TakeHome = {
@@ -57,15 +50,25 @@ export type TakeHome = {
   effectiveRate: number; // total tax / gross
 };
 
-export function takeHome(salary: number, state: StateChoice, customRate = 0): TakeHome {
+/** Exact take-home for any US state code (all 50 + DC have real tables). */
+export function takeHomeByState(salary: number, stateCode: string): TakeHome {
   const gross = Math.max(salary, 0);
   const taxable = Math.max(gross - STD_DEDUCTION, 0);
   const federal = bracketTax(taxable, FEDERAL);
   const fica = Math.min(gross, SS_WAGE_BASE) * 0.062 + gross * 0.0145;
-  const stateTax =
-    state === "NJ" ? bracketTax(gross, NJ)
-    : state === "custom" ? gross * Math.min(Math.max(customRate, 0), 0.15)
-    : 0;
+  const stateTax = stateCode in STATE_TAX ? stateTaxOnWages(stateCode, gross) : 0;
+  const net = gross - federal - fica - stateTax;
+  return { gross, federal, fica, state: stateTax, net, effectiveRate: gross > 0 ? (federal + fica + stateTax) / gross : 0 };
+}
+
+/** Legacy signature kept for compatibility; prefer takeHomeByState. */
+export function takeHome(salary: number, state: StateChoice, customRate = 0): TakeHome {
+  if (state === "NJ") return takeHomeByState(salary, "NJ");
+  const gross = Math.max(salary, 0);
+  const taxable = Math.max(gross - STD_DEDUCTION, 0);
+  const federal = bracketTax(taxable, FEDERAL);
+  const fica = Math.min(gross, SS_WAGE_BASE) * 0.062 + gross * 0.0145;
+  const stateTax = state === "custom" ? gross * Math.min(Math.max(customRate, 0), 0.15) : 0;
   const net = gross - federal - fica - stateTax;
   return { gross, federal, fica, state: stateTax, net, effectiveRate: gross > 0 ? (federal + fica + stateTax) / gross : 0 };
 }
@@ -93,5 +96,7 @@ export function choiceForState(code: string): StateChoice {
   if (NO_TAX_STATES.includes(code)) return "none";
   return "custom";
 }
+
+export { STATE_TAX, stateTaxOnWages } from "./stateTax";
 
 export const STATE_RATE_LOOKUP_URL = "https://taxfoundation.org/data/all/state/state-income-tax-rates/";

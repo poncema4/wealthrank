@@ -284,3 +284,46 @@ describe("takeHome", () => {
     expect(takeHome(12_000, "none").federal).toBe(0);
   });
 });
+
+import { takeHomeByState } from "./tax";
+import { stateTaxOnWages } from "./stateTax";
+
+describe("all-50-states tax engine", () => {
+  it("no-wage-tax states: zero state tax", () => {
+    for (const code of ["TX", "FL", "WA", "TN", "NH"]) {
+      expect(stateTaxOnWages(code, 62_000)).toBe(0);
+    }
+  });
+
+  it("flat states: exact single-rate math", () => {
+    expect(stateTaxOnWages("PA", 62_000)).toBeCloseTo(62_000 * 0.0307);
+    expect(stateTaxOnWages("IL", 62_000)).toBeCloseTo(62_000 * 0.0495);
+    expect(stateTaxOnWages("CO", 100_000)).toBeCloseTo(4_400);
+  });
+
+  it("progressive states: bracket walks are correct", () => {
+    // VA on 62k: 3000*.02 + 2000*.03 + 12000*.05 + 45000*.0575 = 60+60+600+2587.5
+    expect(stateTaxOnWages("VA", 62_000)).toBeCloseTo(3307.5);
+    // CA on 62k: walks 1/2/4/6/8% brackets
+    const ca = stateTaxOnWages("CA", 62_000);
+    expect(ca).toBeGreaterThan(1900); expect(ca).toBeLessThan(2600);
+    // NY on 62k under the 80650 threshold: 8500*.04+3200*.045+2200*.0525+(62000-13900)*.055
+    expect(stateTaxOnWages("NY", 62_000)).toBeCloseTo(8500*0.04+3200*0.045+2200*0.0525+48100*0.055, 0);
+    // OH: zero below 26050
+    expect(stateTaxOnWages("OH", 20_000)).toBe(0);
+    expect(stateTaxOnWages("OH", 30_000)).toBeCloseTo((30_000-26_050)*0.0275);
+  });
+
+  it("takeHomeByState composes federal + FICA + state", () => {
+    const tx = takeHomeByState(62_000, "TX");
+    const ca = takeHomeByState(62_000, "CA");
+    expect(tx.state).toBe(0);
+    expect(ca.state).toBeGreaterThan(0);
+    expect(tx.net).toBeGreaterThan(ca.net);
+    expect(takeHomeByState(62_000, "NJ").state).toBeGreaterThan(1000);
+  });
+
+  it("unknown code degrades to zero state tax, never crashes", () => {
+    expect(takeHomeByState(62_000, "ZZ").state).toBe(0);
+  });
+});

@@ -21,7 +21,7 @@ import { computeInsights } from "./lib/insights";
 import { localAiInsights } from "./lib/localAi";
 import { importBankCsv, toLedgerEntries } from "./lib/csv";
 import { compareShares, savingsVsNation, CEX_VINTAGE } from "./lib/benchmarks";
-import { takeHome, TAX_VINTAGE, ALL_STATES, choiceForState, NO_TAX_STATES, STATE_RATE_LOOKUP_URL, type StateChoice } from "./lib/tax";
+import { takeHomeByState, TAX_VINTAGE, ALL_STATES, NO_TAX_STATES, STATE_RATE_LOOKUP_URL } from "./lib/tax";
 import {
   fetchLedger,
   addLedgerEntry,
@@ -179,8 +179,7 @@ export default function Money() {
   // paycheck setup
   const [salaryIn, setSalaryIn] = useState(profile.salary ? String(profile.salary) : "");
   const [freq, setFreq] = useState<PayFrequency>(profile.payFreq ?? "biweekly");
-  const [stateChoice, setStateChoice] = useState<StateChoice>(() => readLocal("wr:taxstate", "none" as StateChoice));
-  const [customRate, setCustomRate] = useState<string>(() => readLocal("wr:taxrate", ""));
+  const [stateCode, setStateCode] = useState<string>(() => readLocal("wr:taxstatecode", ""));
 
   useEffect(() => {
     fetchLedger().then((r) => {
@@ -229,9 +228,7 @@ export default function Money() {
     saveLedgerProfile(p).then(setSynced);
   };
 
-  const tax = profile.salary
-    ? takeHome(profile.salary, stateChoice, Number(customRate) / 100 || 0)
-    : null;
+  const tax = profile.salary && stateCode ? takeHomeByState(profile.salary, stateCode) : null;
 
   const logPaycheck = async () => {
     if (!profile.salary || !profile.payFreq) return;
@@ -372,37 +369,19 @@ export default function Money() {
             </select>
           </label>
           <label>
-            <span>Your state (search)</span>
+            <span>Your state</span>
             <select
-              value={readLocal("wr:taxstatecode", "")}
-              onChange={(e) => {
-                const code = e.target.value;
-                writeLocal("wr:taxstatecode", code);
-                const mode = choiceForState(code);
-                setStateChoice(mode);
-                writeLocal("wr:taxstate", mode);
-              }}
+              value={stateCode}
+              onChange={(e) => { setStateCode(e.target.value); writeLocal("wr:taxstatecode", e.target.value); }}
             >
               <option value="">Pick your state...</option>
               {ALL_STATES.map(([code, name]) => (
                 <option key={code} value={code}>
-                  {name}{NO_TAX_STATES.includes(code) ? " (no income tax)" : ""}
+                  {name}{NO_TAX_STATES.includes(code) || code === "WA" ? " (no wage tax)" : ""}
                 </option>
               ))}
             </select>
           </label>
-          {stateChoice === "custom" && (
-            <label>
-              <span>
-                State income tax rate (%){" "}
-                <a className="hint-link" href={STATE_RATE_LOOKUP_URL} target="_blank" rel="noreferrer">
-                  find your state's rate
-                </a>
-              </span>
-              <input type="text" inputMode="decimal" placeholder="5" value={customRate}
-                onChange={(e) => { setCustomRate(e.target.value); writeLocal("wr:taxrate", e.target.value); }} />
-            </label>
-          )}
           <label>
             <span>Your age (for the salary comparison)</span>
             <input type="number" inputMode="numeric" placeholder="21" value={age}
@@ -435,7 +414,11 @@ export default function Money() {
                 </div>
               ))}
             </div>
-            <div className="footnote">{TAX_VINTAGE}. Estimate only: no 401k, health premiums, credits, or local taxes.</div>
+            <div className="footnote">
+              {TAX_VINTAGE} federal; state brackets per Tax Foundation, all 50 states + DC.
+              Estimate only: no 401k, health premiums, state deductions/credits, or local taxes.{" "}
+              <a className="hint-link" href={STATE_RATE_LOOKUP_URL} target="_blank" rel="noreferrer">source</a>
+            </div>
           </div>
         )}
         {profile.salary && (
