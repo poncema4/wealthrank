@@ -13,11 +13,13 @@ import {
   type PayFrequency,
 } from "./lib/money";
 import { fmtMoney } from "./lib/percentile";
+import { computeInsights } from "./lib/insights";
 import {
   fetchLedger,
   addLedgerEntry,
   deleteLedgerEntry,
   saveLedgerProfile,
+  fetchAiInsights,
   type LedgerProfile,
 } from "./lib/api";
 
@@ -112,6 +114,17 @@ export default function Money() {
   const month = new Date().toISOString().slice(0, 7);
   const summary = useMemo(() => summarizeMonth(entries, month), [entries, month]);
   const verdict = savingsVerdict(summary.savingsRate);
+  const insights = useMemo(() => computeInsights(entries), [entries]);
+  const [aiInsights, setAiInsights] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    if (insights.length === 0) { setAiInsights(null); return; }
+    const facts = insights.map((i) => i.text);
+    const t = setTimeout(() => {
+      fetchAiInsights(facts, Number(age) || undefined).then(setAiInsights);
+    }, 800); // debounce: don't hammer the LLM on every keystroke of entries
+    return () => clearTimeout(t);
+  }, [insights, age]);
 
   const saveProfile = async () => {
     const salary = Math.round(Number(salaryIn.replace(/[,$\s]/g, "")));
@@ -270,6 +283,29 @@ export default function Money() {
         )}
         <Sparkline entries={entries} />
       </section>
+
+      {/* insights */}
+      {insights.length > 0 && (
+        <section className="card">
+          <h2 className="section-title">
+            Insights
+            <span className={aiInsights ? "sync-badge ai" : "sync-badge"}>
+              {aiInsights ? "AI coach" : "computed from your ledger"}
+            </span>
+          </h2>
+          <div className="insights">
+            {(aiInsights ?? insights.map((i) => i.text)).map((text, idx) => (
+              <div className="insight" key={idx}>
+                <span className="insight-icon">{aiInsights ? "◆" : insights[idx]?.icon ?? "◆"}</span>
+                <span>{text}</span>
+              </div>
+            ))}
+          </div>
+          <p className="footnote">
+            The numbers always come from your ledger — {aiInsights ? "the AI only phrases them." : "AI phrasing activates when the server has a model key configured."}
+          </p>
+        </section>
+      )}
 
       {/* quick add */}
       <section className="card">

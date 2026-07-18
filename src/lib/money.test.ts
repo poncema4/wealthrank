@@ -104,3 +104,40 @@ describe("guidance", () => {
     expect(emergencyFundTarget(2000)).toEqual({ low: 6000, high: 12000 });
   });
 });
+
+import { computeInsights } from "./insights";
+
+describe("computeInsights", () => {
+  const NOW = new Date(Date.UTC(2026, 6, 18));
+  const mk = (kind: "income" | "expense", amount: number, category = "Other", daysAgo = 3): LedgerEntry => ({
+    id: Math.random().toString(36).slice(2),
+    ts: NOW.getTime() - daysAgo * 86400_000,
+    kind, amount, note: "", category,
+  });
+
+  it("praises an above-guideline savings rate", () => {
+    const ins = computeInsights([mk("income", 4000), mk("expense", 1000, "Rent")], NOW);
+    expect(ins.some((i) => i.text.includes("above the 20% guideline"))).toBe(true);
+  });
+
+  it("flags a dominant category", () => {
+    const ins = computeInsights(
+      [mk("income", 3000), mk("expense", 1500, "Rent"), mk("expense", 200, "Food")],
+      NOW
+    );
+    expect(ins.some((i) => i.text.startsWith("Rent is"))).toBe(true);
+  });
+
+  it("catches the small-leak pattern", () => {
+    const leaks = Array.from({ length: 6 }, () => mk("expense", 12, "Food"));
+    const ins = computeInsights([mk("income", 2000), ...leaks], NOW);
+    expect(ins.some((i) => i.text.includes("under $25"))).toBe(true);
+  });
+
+  it("never returns more than 4 insights and never crashes empty", () => {
+    expect(computeInsights([], NOW).length).toBe(0);
+    const many = [mk("income", 3000), mk("expense", 1400, "Rent"),
+      ...Array.from({ length: 8 }, () => mk("expense", 10, "Fun"))];
+    expect(computeInsights(many, NOW).length).toBeLessThanOrEqual(4);
+  });
+});

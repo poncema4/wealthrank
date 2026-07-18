@@ -454,3 +454,9 @@ footer a { color: var(--accent-2); text-decoration: none; }
 .learn-step-t { font-weight: 800; font-size: 0.95rem; }
 .learn-step-d { color: var(--muted); font-size: 0.87rem; line-height: 1.55; margin-top: 4px; }
 .center { text-align: center; }
+
+/* ---------- insights ---------- */
+.insights { display: flex; flex-direction: column; gap: 12px; }
+.insight { display: flex; gap: 12px; font-size: 0.92rem; line-height: 1.55; align-items: baseline; }
+.insight-icon { color: var(--accent); flex-shrink: 0; font-size: 0.8rem; }
+.sync-badge.ai { color: var(--accent-2); border-color: rgba(34, 184, 207, 0.4); }

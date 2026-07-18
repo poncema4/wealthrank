@@ -219,3 +219,20 @@ export async function saveLedgerProfile(p: LedgerProfile): Promise<boolean> {
     return false;
   }
 }
+
+/* ---------- AI insights (optional server-side LLM; degrades to local) ---------- */
+
+export async function fetchAiInsights(facts: string[], age?: number): Promise<string[] | null> {
+  try {
+    const r = await withTimeout("/api/insights", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ facts, age }),
+    });
+    if (!r.ok) return null; // 503 = not configured -> deterministic layer shows
+    const data = await r.json();
+    return Array.isArray(data.insights) ? data.insights.map(String) : null;
+  } catch {
+    return null;
+  }
+}
