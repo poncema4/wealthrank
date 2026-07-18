@@ -1,26 +1,26 @@
 /**
  * Take-home pay estimator. Single filer, standard deduction, W-2 wages.
- * Federal: 2025 brackets + $15,000 standard deduction (latest fully-verified
- * set; 2026's inflation adjustments land late 2026 and are a constants update).
+ * Federal: TAX YEAR 2026 brackets + $16,100 standard deduction (IRS Rev. Proc.
+ * 2025-32, verified via Tax Foundation). SS wage base $184,500 (2026).
  * FICA: 6.2% Social Security (to the $176,100 wage base) + 1.45% Medicare.
  * State: exact brackets for New Jersey; the nine no-income-tax states; a
  * custom effective-rate input for everywhere else. Labeled an ESTIMATE in the
  * UI: no 401k/health deductions, no local taxes, no credits.
  */
 
-export const TAX_VINTAGE = "2025 federal brackets, single filer, standard deduction";
+export const TAX_VINTAGE = "Tax year 2026 (IRS Rev. Proc. 2025-32), single filer, standard deduction";
 
-const STD_DEDUCTION = 15_000;
-const SS_WAGE_BASE = 176_100;
+const STD_DEDUCTION = 16_100;
+const SS_WAGE_BASE = 184_500;
 
 const FEDERAL: [number, number][] = [
-  // [top of bracket, rate]
-  [11_925, 0.10],
-  [48_475, 0.12],
-  [103_350, 0.22],
-  [197_300, 0.24],
-  [250_525, 0.32],
-  [626_350, 0.35],
+  // [top of bracket, rate] — tax year 2026, verified vs Tax Foundation table
+  [12_400, 0.10],
+  [50_400, 0.12],
+  [105_700, 0.22],
+  [201_775, 0.24],
+  [256_225, 0.32],
+  [640_600, 0.35],
   [Infinity, 0.37],
 ];
 

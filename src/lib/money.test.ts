@@ -261,8 +261,8 @@ import { takeHome } from "./tax";
 describe("takeHome", () => {
   it("62k single in NJ: sane federal, FICA, state, net", () => {
     const t = takeHome(62_000, "NJ");
-    // federal on (62000-15000)=47000 taxable: 11925*.10 + (47000-11925)*.12 = 5401.5
-    expect(t.federal).toBeCloseTo(5401.5, 0);
+    // federal on (62000-16100)=45900 taxable: 12400*.10 + (45900-12400)*.12 = 5260
+    expect(t.federal).toBeCloseTo(5260, 0);
     expect(t.fica).toBeCloseTo(62_000 * 0.0765, 0);
     expect(t.state).toBeGreaterThan(1000);
     expect(t.state).toBeLessThan(2500);
