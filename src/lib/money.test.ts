@@ -229,3 +229,29 @@ describe("bank CSV import", () => {
     expect(categorize("MYSTERY VENDOR LLC")).toBe("Other");
   });
 });
+
+import { compareShares, savingsVsNation } from "./benchmarks";
+
+describe("benchmarks", () => {
+  const s = { income: 4000, expenses: 2000, net: 2000, savingsRate: 0.5,
+    byCategory: { Rent: 1000, Food: 500, Gas: 200, Fun: 300 } };
+
+  it("computes share-vs-nation rows for mapped groups", () => {
+    const rows = compareShares(s);
+    const housing = rows.find((r) => r.label === "Housing")!;
+    expect(housing.yourShare).toBeCloseTo(0.5);
+    expect(housing.delta).toBeCloseTo(0.5 - 0.334);
+    expect(rows.find((r) => r.label === "Transportation")!.yourShare).toBeCloseTo(0.1);
+  });
+
+  it("empty spending -> no rows; zero-spend groups dropped", () => {
+    expect(compareShares({ ...s, expenses: 0, byCategory: {} })).toEqual([]);
+  });
+
+  it("savings verdict tiers vs the 3% national rate", () => {
+    expect(savingsVsNation(0.5)).toContain("more than double");
+    expect(savingsVsNation(0.04)).toContain("beats");
+    expect(savingsVsNation(0.01)).toContain("below");
+    expect(savingsVsNation(null)).toBeNull();
+  });
+});

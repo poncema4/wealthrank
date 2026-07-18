@@ -532,3 +532,12 @@ footer a { color: var(--accent-2); text-decoration: none; }
   font-size: 0.8rem; line-height: 1; cursor: pointer;
 }
 .receipt-x.sm { width: 16px; height: 16px; font-size: 0.65rem; top: -5px; right: -5px; }
+
+/* ---------- national benchmarks ---------- */
+.natl-line { margin-top: 10px; font-size: 0.88rem; color: var(--accent-2); line-height: 1.5; }
+.share-rows { margin-top: 12px; display: flex; flex-direction: column; gap: 7px; }
+.share-row { display: flex; gap: 10px; font-size: 0.85rem; line-height: 1.5; }
+.share-label { color: var(--muted); font-weight: 700; width: 110px; flex-shrink: 0; }
+.share-row em { font-style: normal; font-size: 0.78rem; margin-left: 6px; }
+.share-row em.hot { color: #ff9d6b; }
+.share-row em.cool { color: var(--accent); }

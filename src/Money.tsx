@@ -20,6 +20,7 @@ import { fmtMoney } from "./lib/percentile";
 import { computeInsights } from "./lib/insights";
 import { localAiInsights } from "./lib/localAi";
 import { importBankCsv, toLedgerEntries } from "./lib/csv";
+import { compareShares, savingsVsNation, CEX_VINTAGE } from "./lib/benchmarks";
 import {
   fetchLedger,
   addLedgerEntry,
@@ -387,6 +388,26 @@ export default function Money() {
             <span> Guideline: keep ~{Math.round(TARGET_SAVINGS_RATE * 100)}% (the 50/30/20 rule).</span>
           )}
         </div>
+        {savingsVsNation(summary.savingsRate) && (
+          <div className="natl-line">{savingsVsNation(summary.savingsRate)}</div>
+        )}
+        {compareShares(summary).length > 0 && (
+          <div className="share-rows">
+            {compareShares(summary).map((r) => (
+              <div className="share-row" key={r.label}>
+                <span className="share-label">{r.label}</span>
+                <span>
+                  <b>{Math.round(r.yourShare * 100)}%</b> of your spending vs{" "}
+                  {Math.round(r.nationalShare * 100)}% for the average household
+                  <em className={r.delta > 0.05 ? "hot" : "cool"}>
+                    {r.delta > 0.05 ? " higher than typical" : r.delta < -0.05 ? " lower than typical" : " about typical"}
+                  </em>
+                </span>
+              </div>
+            ))}
+            <div className="footnote">{CEX_VINTAGE}. Shares of total spending, so the comparison is fair at any income.</div>
+          </div>
+        )}
         {Object.keys(summary.byCategory).length > 0 && (
           <div className="cat-row">
             {Object.entries(summary.byCategory)
