@@ -336,9 +336,18 @@ export default function Money() {
     setImportMsg("Reading photo...");
     const thumb = await fileToThumbnail(f);
     setReceiptPreview(thumb);
-    setImportMsg(thumb
-      ? "Receipt attached. Add the amount and hit Add."
-      : "Could not read that photo. Try again, or use a different image.");
+    if (thumb) {
+      setImportMsg("Receipt attached. Add the amount and hit Add.");
+    } else {
+      // name the exact format+size so a failure report diagnoses itself;
+      // HEIC (iPhone) is undecodable in some browsers - screenshots are always PNG
+      const kind = f.type || "unknown format";
+      const mb = (f.size / 1_000_000).toFixed(1);
+      setImportMsg(
+        `Could not read that photo (${kind}, ${mb}MB). Your browser may not support this ` +
+        "format. Quick fix: screenshot the receipt photo and attach the screenshot instead."
+      );
+    }
   };
 
   const a = Math.floor(Number(age));
