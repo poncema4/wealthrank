@@ -255,3 +255,32 @@ describe("benchmarks", () => {
     expect(savingsVsNation(null)).toBeNull();
   });
 });
+
+import { takeHome } from "./tax";
+
+describe("takeHome", () => {
+  it("62k single in NJ: sane federal, FICA, state, net", () => {
+    const t = takeHome(62_000, "NJ");
+    // federal on (62000-15000)=47000 taxable: 11925*.10 + (47000-11925)*.12 = 5401.5
+    expect(t.federal).toBeCloseTo(5401.5, 0);
+    expect(t.fica).toBeCloseTo(62_000 * 0.0765, 0);
+    expect(t.state).toBeGreaterThan(1000);
+    expect(t.state).toBeLessThan(2500);
+    expect(t.net).toBeGreaterThan(49_000);
+    expect(t.net).toBeLessThan(52_000);
+  });
+
+  it("no-tax state has zero state tax; net higher than NJ", () => {
+    expect(takeHome(62_000, "none").state).toBe(0);
+    expect(takeHome(62_000, "none").net).toBeGreaterThan(takeHome(62_000, "NJ").net);
+  });
+
+  it("custom rate is applied and capped", () => {
+    expect(takeHome(50_000, "custom", 0.05).state).toBeCloseTo(2500);
+    expect(takeHome(50_000, "custom", 0.9).state).toBeCloseTo(7500); // 15% cap
+  });
+
+  it("salary under the standard deduction pays no federal", () => {
+    expect(takeHome(12_000, "none").federal).toBe(0);
+  });
+});

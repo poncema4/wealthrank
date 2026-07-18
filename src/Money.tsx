@@ -21,6 +21,7 @@ import { computeInsights } from "./lib/insights";
 import { localAiInsights } from "./lib/localAi";
 import { importBankCsv, toLedgerEntries } from "./lib/csv";
 import { compareShares, savingsVsNation, CEX_VINTAGE } from "./lib/benchmarks";
+import { takeHome, TAX_VINTAGE, type StateChoice } from "./lib/tax";
 import {
   fetchLedger,
   addLedgerEntry,
@@ -160,6 +161,8 @@ export default function Money() {
   // paycheck setup
   const [salaryIn, setSalaryIn] = useState(profile.salary ? String(profile.salary) : "");
   const [freq, setFreq] = useState<PayFrequency>(profile.payFreq ?? "biweekly");
+  const [stateChoice, setStateChoice] = useState<StateChoice>(() => readLocal("wr:taxstate", "none" as StateChoice));
+  const [customRate, setCustomRate] = useState<string>(() => readLocal("wr:taxrate", ""));
 
   useEffect(() => {
     fetchLedger().then((r) => {
@@ -208,9 +211,15 @@ export default function Money() {
     saveLedgerProfile(p).then(setSynced);
   };
 
+  const tax = profile.salary
+    ? takeHome(profile.salary, stateChoice, Number(customRate) / 100 || 0)
+    : null;
+
   const logPaycheck = async () => {
     if (!profile.salary || !profile.payFreq) return;
-    const amt = Math.round(paycheckFromAnnual(profile.salary, profile.payFreq) * 100) / 100;
+    // log the NET take-home per paycheck (what actually hits the bank)
+    const yearlyNet = tax ? tax.net : profile.salary;
+    const amt = Math.round(paycheckFromAnnual(yearlyNet, profile.payFreq) * 100) / 100;
     await addEntry({ kind: "income", amount: amt, note: "Paycheck", category: "Paycheck", ts: Date.now() });
     const p = { ...profile, payAnchor: Date.now() };
     setProfile(p); writeLocal(PROFILE_KEY, p);
@@ -223,7 +232,8 @@ export default function Money() {
 
   const logMissed = async () => {
     if (!profile.salary || !profile.payFreq || missed.length === 0) return;
-    const amt = Math.round(paycheckFromAnnual(profile.salary, profile.payFreq) * 100) / 100;
+    const yearlyNet = tax ? tax.net : profile.salary;
+    const amt = Math.round(paycheckFromAnnual(yearlyNet, profile.payFreq) * 100) / 100;
     for (const ts of missed) {
       await addEntry({ kind: "income", amount: amt, note: "Paycheck (auto)", category: "Paycheck", ts });
     }
@@ -340,6 +350,21 @@ export default function Money() {
             </select>
           </label>
           <label>
+            <span>State tax</span>
+            <select value={stateChoice} onChange={(e) => { setStateChoice(e.target.value as StateChoice); writeLocal("wr:taxstate", e.target.value); }}>
+              <option value="none">No state income tax (TX, FL, WA...)</option>
+              <option value="NJ">New Jersey</option>
+              <option value="custom">Other state (enter %)</option>
+            </select>
+          </label>
+          {stateChoice === "custom" && (
+            <label>
+              <span>Your state's income tax rate (%)</span>
+              <input type="text" inputMode="decimal" placeholder="5" value={customRate}
+                onChange={(e) => { setCustomRate(e.target.value); writeLocal("wr:taxrate", e.target.value); }} />
+            </label>
+          )}
+          <label>
             <span>Your age (for the salary comparison)</span>
             <input type="number" inputMode="numeric" placeholder="21" value={age}
               onChange={(e) => { setAge(e.target.value); writeLocal("wr:age", e.target.value); }} />
@@ -349,11 +374,31 @@ export default function Money() {
           <button className="mini" onClick={saveProfile}>Save</button>
           {profile.salary && profile.payFreq && (
             <button className="mini alt" onClick={logPaycheck}>
-              Log a paycheck (+{fmtMoney(paycheckFromAnnual(profile.salary, profile.payFreq))})
+              Log a paycheck (+{fmtMoney(paycheckFromAnnual(tax ? tax.net : profile.salary, profile.payFreq))} take-home)
             </button>
           )}
         </div>
 
+        {tax && profile.payFreq && (
+          <div className="takehome">
+            <div className="takehome-head">
+              Take-home estimate: <b>{fmtMoney(tax.net)}/yr</b> after {Math.round(tax.effectiveRate * 100)}% total tax
+            </div>
+            <div className="takehome-taxes">
+              Federal {fmtMoney(tax.federal)} · Social Security + Medicare {fmtMoney(tax.fica)}
+              {tax.state > 0 && <> · State {fmtMoney(tax.state)}</>}
+            </div>
+            <div className="takehome-grid">
+              {([["Weekly", 52], ["Biweekly", 26], ["Twice a month", 24], ["Monthly", 12]] as const).map(([label, n]) => (
+                <div className={`takehome-cell${profile.payFreq === ({52:"weekly",26:"biweekly",24:"semimonthly",12:"monthly"} as const)[n] ? " current" : ""}`} key={label}>
+                  <div className="takehome-v">{fmtMoney(tax.net / n)}</div>
+                  <div className="takehome-k">{label}</div>
+                </div>
+              ))}
+            </div>
+            <div className="footnote">{TAX_VINTAGE}. Estimate only: no 401k, health premiums, credits, or local taxes.</div>
+          </div>
+        )}
         {profile.salary && (
           <div className="salary-compare">
             {ratio !== null ? (

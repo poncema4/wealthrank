@@ -585,3 +585,14 @@ footer a { color: var(--accent-2); text-decoration: none; }
 .modal-note { text-align: center; color: var(--muted); font-size: 0.7rem; line-height: 1.5; margin-top: 14px; }
 .center-col { flex-direction: column; text-align: center; gap: 8px; }
 .acct-avatar.lg { width: 62px; height: 62px; font-size: 1.7rem; margin: 0 auto; }
+
+/* ---------- take-home ---------- */
+.takehome { margin-top: 14px; background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.takehome-head { font-size: 0.95rem; }
+.takehome-taxes { color: var(--muted); font-size: 0.8rem; margin-top: 5px; }
+.takehome-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+@media (max-width: 520px) { .takehome-grid { grid-template-columns: repeat(2, 1fr); } }
+.takehome-cell { text-align: center; padding: 9px 4px; border: 1px solid var(--line); border-radius: 10px; }
+.takehome-cell.current { border-color: rgba(61, 220, 132, 0.5); background: rgba(61, 220, 132, 0.06); }
+.takehome-v { font-weight: 800; font-size: 1rem; }
+.takehome-k { color: var(--muted); font-size: 0.68rem; margin-top: 2px; }
