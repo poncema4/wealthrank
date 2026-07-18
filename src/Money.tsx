@@ -26,8 +26,6 @@ import {
   deleteLedgerEntry,
   saveLedgerProfile,
   fetchAiInsights,
-  claimAccount,
-  loginAccount,
   type LedgerProfile,
 } from "./lib/api";
 
@@ -156,9 +154,6 @@ export default function Money() {
   const [importMsg, setImportMsg] = useState("");
   const [budgetsOpen, setBudgetsOpen] = useState(false);
   const [budgetDraft, setBudgetDraft] = useState<Record<string, string>>({});
-  const [acctMsg, setAcctMsg] = useState("");
-  const [uname, setUname] = useState("");
-  const [pass, setPass] = useState("");
 
   // paycheck setup
   const [salaryIn, setSalaryIn] = useState(profile.salary ? String(profile.salary) : "");
@@ -258,28 +253,6 @@ export default function Money() {
     setProfile(p); writeLocal(PROFILE_KEY, p);
     saveLedgerProfile({ budgets: clean }).then(setSynced);
     setBudgetsOpen(false);
-  };
-
-  const doClaim = async () => {
-    setAcctMsg("...");
-    const r = await claimAccount(uname.trim(), pass);
-    setAcctMsg(r.ok ? `Claimed. You can now log in as "${uname.trim().toLowerCase()}" on any device.` : r.error ?? "failed");
-  };
-  const doLogin = async () => {
-    setAcctMsg("...");
-    const r = await loginAccount(uname.trim(), pass);
-    if (r.ok) {
-      setAcctMsg("Logged in. Loading your data...");
-      const led = await fetchLedger();
-      if (led) {
-        setEntries(led.entries); writeLocal(LEDGER_KEY, led.entries);
-        setProfile(led.profile); writeLocal(PROFILE_KEY, led.profile);
-        if (led.profile.salary) setSalaryIn(String(led.profile.salary));
-        if (led.profile.payFreq) setFreq(led.profile.payFreq);
-        setSynced(true);
-        setAcctMsg("Logged in. This device now shows your account.");
-      }
-    } else setAcctMsg(r.error ?? "failed");
   };
 
   const addEntry = async (e: Omit<LedgerEntry, "id">) => {
@@ -540,26 +513,6 @@ export default function Money() {
         <p className="footnote">
           Receipts stay on this device only, never uploaded. Amounts sync to your private account.
         </p>
-      </section>
-
-      {/* account */}
-      <section className="card">
-        <h2 className="section-title">Your account</h2>
-        <p className="future-sub">
-          Your data saves to an anonymous account on this device. Claim a username to log in from any
-          device; there is no email or reset (keep your passphrase safe).
-        </p>
-        <div className="acct-grid">
-          <input type="text" placeholder="username (a-z, 0-9, _)" autoCapitalize="off" value={uname}
-            onChange={(e) => setUname(e.target.value)} />
-          <input type="password" placeholder="passphrase (8+ chars)" value={pass}
-            onChange={(e) => setPass(e.target.value)} />
-        </div>
-        <div className="row-btns">
-          <button className="mini" onClick={doClaim}>Claim this account</button>
-          <button className="mini alt" onClick={doLogin}>Log in on this device</button>
-        </div>
-        {acctMsg && <p className="import-msg">{acctMsg}</p>}
       </section>
 
       {/* ledger */}

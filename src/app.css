@@ -494,3 +494,14 @@ footer a { color: var(--accent-2); text-decoration: none; }
 /* ---------- account ---------- */
 .acct-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
 @media (max-width: 480px) { .acct-grid { grid-template-columns: 1fr; } }
+
+/* ---------- header account ---------- */
+.hero { position: relative; }
+.acct-btn {
+  position: absolute; top: 0; right: 0;
+  background: var(--card); border: 1px solid var(--line); color: var(--accent-2);
+  border-radius: 999px; padding: 7px 16px; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+}
+.acct-panel { animation: rise 0.25s ease-out; }
+.acct-head { display: flex; justify-content: space-between; align-items: baseline; }
+.mini:disabled { opacity: 0.5; cursor: default; }

@@ -12,6 +12,7 @@ import {
   fmtMoney,
 } from "./lib/percentile";
 import Money from "./Money";
+import Account, { savedUsername } from "./Account";
 import Learn from "./Learn";
 import {
   submitCheck,
@@ -173,6 +174,7 @@ function num(s: string): number {
 
 export default function App() {
   const [tab, setTab] = useState<"rank" | "money" | "learn">("rank");
+  const [acctOpen, setAcctOpen] = useState(false);
   const [age, setAge] = useState("");
   const [netWorth, setNetWorth] = useState("");
   const [builderOpen, setBuilderOpen] = useState(false);
@@ -280,6 +282,9 @@ export default function App() {
   return (
     <div className="wrap">
       <header className="hero">
+        <button className="acct-btn" onClick={() => setAcctOpen((v) => !v)}>
+          {savedUsername() ? savedUsername() : "Account"}
+        </button>
         <div className="logo">
           Wealth<span>Rank</span>
         </div>
@@ -297,6 +302,8 @@ export default function App() {
         <button className={tab === "money" ? "on" : ""} onClick={() => setTab("money")}>Money</button>
         <button className={tab === "learn" ? "on" : ""} onClick={() => setTab("learn")}>Learn</button>
       </nav>
+
+      {acctOpen && <Account onClose={() => setAcctOpen(false)} />}
 
       {tab === "money" && <Money />}
       {tab === "learn" && <Learn />}
